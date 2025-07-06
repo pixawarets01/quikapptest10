@@ -136,6 +136,7 @@ main() {
     
     # Stage 1.7: Pre-build Setup
     log_info "--- Stage 1.7: Pre-build Setup ---"
+    chmod +x "${SCRIPT_DIR}/setup_environment.sh"
     if ! "${SCRIPT_DIR}/setup_environment.sh"; then
         send_email "build_failed" "iOS" "${CM_BUILD_ID:-unknown}" "Pre-build setup failed."
         return 1
