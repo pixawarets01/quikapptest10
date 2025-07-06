@@ -1,0 +1,104 @@
+# Bundle Identifier Collision Final Fix - Enhanced Podfile
+platform :ios, '13.0'
+use_frameworks! :linkage => :static
+
+ENV['COCOAPODS_DISABLE_STATS'] = 'true'
+
+project 'Runner', {
+  'Debug' => :debug,
+  'Profile' => :release,
+  'Release' => :release,
+}
+
+def flutter_root
+  generated_xcode_build_settings_path = File.expand_path(File.join('..', 'Flutter', 'Generated.xcconfig'), __FILE__)
+  unless File.exist?(generated_xcode_build_settings_path)
+    raise "#{generated_xcode_build_settings_path} must exist. If you're running pod install manually, make sure flutter pub get is executed first"
+  end
+
+  File.foreach(generated_xcode_build_settings_path) do |line|
+    matches = line.match(/FLUTTER_ROOT\=(.*)/)
+    return matches[1].strip if matches
+  end
+  raise "FLUTTER_ROOT not found in #{generated_xcode_build_settings_path}. Try deleting Generated.xcconfig, then run flutter pub get"
+end
+
+require File.expand_path(File.join('packages', 'flutter_tools', 'bin', 'podhelper'), flutter_root)
+
+flutter_ios_podfile_setup
+
+target 'Runner' do
+  use_frameworks!
+  use_modular_headers!
+
+  flutter_install_all_ios_pods File.dirname(File.realpath(__FILE__))
+  
+  target 'RunnerTests' do
+    inherit! :search_paths
+  end
+end
+
+# BUNDLE IDENTIFIER COLLISION FINAL FIX
+post_install do |installer|
+  puts "🔧 BUNDLE IDENTIFIER COLLISION FINAL FIX - Starting collision prevention..."
+  
+  # Main bundle identifier
+  main_bundle_id = "com.twinklub.twinklub"
+  collision_fixes_applied = 0
+  
+  installer.pods_project.targets.each do |target|
+    flutter_additional_ios_build_settings(target)
+    target.build_configurations.each do |config|
+      # Core iOS settings
+      config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '13.0'
+      config.build_settings['ENABLE_BITCODE'] = 'NO'
+      config.build_settings['CODE_SIGNING_ALLOWED'] = 'NO'
+      config.build_settings['CODE_SIGNING_REQUIRED'] = 'NO'
+      
+      # AGGRESSIVE BUNDLE IDENTIFIER COLLISION PREVENTION
+      current_bundle_id = config.build_settings['PRODUCT_BUNDLE_IDENTIFIER']
+      
+      if current_bundle_id
+        # Skip the main Runner target
+        next if target.name == 'Runner'
+        
+        # Check for collision with main bundle ID
+        if current_bundle_id == main_bundle_id || 
+           current_bundle_id.include?('com.twinklub.twinklub') || 
+           current_bundle_id.include?('com.example')
+          
+          # Create unique bundle ID for this target
+          unique_bundle_id = "#{main_bundle_id}.pod.#{target.name.downcase.gsub(/[^a-z0-9]/, '')}"
+          
+          config.build_settings['PRODUCT_BUNDLE_IDENTIFIER'] = unique_bundle_id
+          collision_fixes_applied += 1
+          
+          puts "   🔧 COLLISION FIX: #{target.name}"
+          puts "      OLD: #{current_bundle_id}"
+          puts "      NEW: #{unique_bundle_id}"
+        end
+      else
+        # Ensure pod targets have bundle identifiers
+        if target.name != 'Runner'
+          safe_target_name = target.name.downcase.gsub(/[^a-z0-9]/, '')
+          config.build_settings['PRODUCT_BUNDLE_IDENTIFIER'] = "#{main_bundle_id}.pod.#{safe_target_name}"
+          collision_fixes_applied += 1
+          puts "   🆕 BUNDLE ID ASSIGNED: #{target.name} -> #{main_bundle_id}.pod.#{safe_target_name}"
+        end
+      end
+      
+      # Firebase compatibility if present
+      if target.name.start_with?('Firebase') || target.name.include?('Firebase')
+        puts "   🔥 Applying Firebase compatibility to: #{target.name}"
+        config.build_settings['GCC_WARN_INHIBIT_ALL_WARNINGS'] = 'YES'
+        config.build_settings['CLANG_WARN_EVERYTHING'] = 'NO'
+        config.build_settings['WARNING_CFLAGS'] = ''
+        config.build_settings['OTHER_CFLAGS'] = '$(inherited) -w'
+      end
+    end
+  end
+  
+  puts "✅ BUNDLE IDENTIFIER COLLISION FINAL FIX completed!"
+  puts "   🔧 Collision fixes applied: #{collision_fixes_applied}"
+  puts "   🎯 All pod targets now have unique bundle identifiers"
+end

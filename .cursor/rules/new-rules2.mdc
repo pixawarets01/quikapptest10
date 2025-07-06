@@ -1,0 +1,97 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+✅ No inline scripts inside codemagic.yaml
+
+✅ All custom logic lives inside main.sh or other shell scripts inside a workflow-specific folder
+
+✅ Only script calls are placed in codemagic.yaml
+
+✅ Extensible and clean for team or multi-environment use
+
+✅ Cursor Rules for Codemagic Custom Code Injection
+Here’s a convention you can follow, suitable for teams and Cursor-style cleanliness:
+
+📁 Folder Structure
+css
+Copy
+Edit
+/
+├── codemagic.yaml
+├── workflows/
+│   └── ios-app/
+│       ├── main.sh
+│       ├── fix_embedding_ruby.sh
+│       ├── fix_embedding_sed.sh
+│       └── scripts/
+│           └── fix_framework_embedding.rb
+✅ codemagic.yaml (Clean Script Invocation Only)
+yaml
+Copy
+Edit
+workflows:
+  ios-app:
+    name: iOS Build Workflow
+    instance_type: mac_mini_m1
+    environment:
+      vars:
+        WORKFLOW_DIR: workflows/ios-app
+        XCODE_WORKSPACE: "ios/Runner.xcworkspace"
+        XCODE_SCHEME: "Runner"
+    scripts:
+      - name: Run iOS workflow main script
+        script: |
+          bash $WORKFLOW_DIR/main.sh
+    artifacts:
+      - build/ios/ipa/*.ipa
+      - /tmp/xcodebuild_logs/*.log
+✅ workflows/ios-app/main.sh
+bash
+Copy
+Edit
+#!/bin/bash
+set -e
+
+echo "📦 Getting Flutter packages..."
+flutter packages pub get
+
+# Choose one of the following based on your strategy
+echo "🔧 Fixing framework embedding with Ruby method..."
+bash "$(dirname "$0")/fix_embedding_ruby.sh"
+
+# If you want sed instead, comment above and uncomment below:
+# echo "🔧 Fixing framework embedding with sed method..."
+# bash "$(dirname "$0")/fix_embedding_sed.sh"
+
+echo "🚀 Building iOS app..."
+xcode-project build-ipa --workspace "$XCODE_WORKSPACE" --scheme "$XCODE_SCHEME"
+✅ workflows/ios-app/fix_embedding_ruby.sh
+bash
+Copy
+Edit
+#!/bin/bash
+set -e
+
+echo "📦 Installing Ruby gem xcodeproj..."
+gem install xcodeproj
+
+echo "🚧 Running Ruby script to fix embedding..."
+ruby "$(dirname "$0")/scripts/fix_framework_embedding.rb"
+✅ workflows/ios-app/fix_embedding_sed.sh
+bash
+Copy
+Edit
+#!/bin/bash
+set -e
+
+TARGET_NAME="YourExtensionName"  # <-- Change this
+PROJECT_FILE="ios/Runner.xcodeproj/project.pbxproj"
+
+echo "🔍 Running sed to patch $TARGET_NAME for Flutter.xcframework..."
+sed -i '' "/\/\* Flutter.xcframework in Embed Frameworks \*\//,/attributes = \([^)]+\)/s/ATTRIBUTES = ([^)]*);/ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy);/" "$PROJECT_FILE"
+
+echo "✅ Sed patch complete"
+✅ workflows/ios-app/scripts/fix_framework_embedding.rb
+Same as before — ensure it's executable and correctly references the YourExtensionName target.

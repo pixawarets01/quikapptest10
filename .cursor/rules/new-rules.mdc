@@ -1,0 +1,139 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+Project Structure for All Platforms
+A good practice is to create separate directories for each platform's scripts within a general scripts folder. You can also have a common directory for scripts used by both platforms.
+
+.
+├── lib/
+│   └── scripts/
+│       ├── android/
+│       │   ├── main.sh
+│       │   ├── install_dependencies.sh
+│       │   ├── build_app.sh
+│       │   └── deploy.sh
+│       ├── ios/
+│       │   ├── main.sh
+│       │   ├── install_dependencies.sh
+│       │   ├── build_app.sh
+│       │   └── deploy.sh
+│       └── common/
+│           └── setup.sh
+├── android/
+├── ios/
+└── pubspec.yaml
+🤖 Android Scripts
+Your Android scripts will be similar in structure to the iOS ones.
+
+android/main.sh
+This script acts as the entry point for your Android build, calling other specialized scripts.
+
+Shell
+
+#!/bin/bash
+
+# Exit immediately if a command fails
+set -e
+
+echo "--- Starting Android Build ---"
+
+# Source common setup scripts
+source ./lib/scripts/common/setup.sh
+
+# Source Android-specific scripts
+source ./lib/scripts/android/install_dependencies.sh
+source ./lib/scripts/android/build_app.sh
+source ./lib/scripts/android/deploy.sh
+
+echo "--- Android Build Finished ---"
+android/install_dependencies.sh
+This handles dependency installation for your Android project.
+
+Shell
+
+#!/bin/bash
+
+echo "Installing Android dependencies..."
+# Add your dependency commands here, for example:
+# flutter pub get
+android/build_app.sh
+This script contains the commands to build your Android application.
+
+Shell
+
+#!/bin/bash
+
+echo "Building the Android app..."
+# Add your build commands here, for example:
+# cd android && ./gradlew assembleRelease
+android/deploy.sh
+Use this script for your Android deployment steps.
+
+Shell
+
+#!/bin/bash
+
+echo "Deploying the Android app..."
+# Add your deployment commands here, for example, uploading to Google Play.
+🔄 Combined Workflows
+For a combined workflow that can build either Android or iOS, you can use a single main script that determines the platform at runtime.
+
+codemagic.yaml for Combined Workflows
+In your codemagic.yaml, you'll define separate workflows for each platform and a combined one that can be triggered manually with a specific environment variable.
+
+YAML
+
+workflows:
+  android-workflow:
+    name: Android Build
+    scripts:
+      - name: Run Android build script
+        script: |
+          ./lib/scripts/android/main.sh
+
+  ios-workflow:
+    name: iOS Build
+    scripts:
+      - name: Run iOS build script
+        script: |
+          ./lib/scripts/ios/main.sh
+
+  combined-workflow:
+    name: Combined Build
+    environment:
+      vars:
+        PLATFORM: "ios" # or "android"
+    scripts:
+      - name: Run combined build script
+        script: |
+          ./lib/scripts/main.sh
+Main Script with Conditional Logic (lib/scripts/main.sh)
+This script checks the PLATFORM environment variable to decide which platform-specific build process to run.
+
+Shell
+
+#!/bin/bash
+
+set -e
+
+if [[ "$PLATFORM" == "ios" ]]; then
+  echo "--- Triggering iOS Build ---"
+  ./lib/scripts/ios/main.sh
+elif [[ "$PLATFORM" == "android" ]]; then
+  echo "--- Triggering Android Build ---"
+  ./lib/scripts/android/main.sh
+else
+  echo "Error: PLATFORM environment variable not set or invalid."
+  exit 1
+fi
+Don't Forget to Make Scripts Executable
+Ensure all your new shell scripts are executable by running chmod +x on them.
+
+Bash
+
+chmod +x lib/scripts/android/*.sh
+chmod +x lib/scripts/common/*.sh
+chmod +x lib/scripts/main.sh
+This structured approach allows for a clean, maintainable, and scalable CI/CD process in Codemagic.

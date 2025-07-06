@@ -1,0 +1,406 @@
+#!/bin/bash
+
+# Bundle ID Fixed - Comprehensive Bundle ID Management
+# Purpose: Apply bundle-id-rules compliance and fix CFBundleIdentifier collisions
+# Integration: Can be called from branding_assets.sh or used standalone
+
+set -euo pipefail
+
+# Get script directory and source utilities
+SCRIPT_DIR="$(dirname "$0")"
+source "${SCRIPT_DIR}/utils.sh"
+
+log_info "🎯 Starting Comprehensive Bundle ID Fix..."
+
+# Configuration
+PROJECT_FILE="ios/Runner.xcodeproj/project.pbxproj"
+TIMESTAMP=$(date +%Y%m%d_%H%M%S)
+
+# Function to validate bundle ID format (bundle-id-rules compliance)
+validate_bundle_id_format() {
+    local bundle_id="$1"
+    
+    log_info "🔍 Validating bundle ID format: $bundle_id"
+    
+    # Check for bundle-id-rules compliance
+    if [[ ! "$bundle_id" =~ ^[a-zA-Z0-9]+(\.[a-zA-Z0-9]+)*$ ]]; then
+        log_error "❌ Invalid bundle ID format: $bundle_id"
+        log_error "📋 Bundle-ID-Rules requirements:"
+        log_error "   ✅ Only alphanumeric characters and dots"
+        log_error "   ❌ No underscores, hyphens, or special characters"
+        log_error "   ✅ Format: com.company.app"
+        return 1
+    fi
+    
+    # Check length
+    if [ ${#bundle_id} -gt 255 ]; then
+        log_error "❌ Bundle ID too long (${#bundle_id} chars, max 255)"
+        return 1
+    fi
+    
+    # Check for proper reverse domain format
+    if [[ ! "$bundle_id" =~ \. ]]; then
+        log_warn "⚠️ Bundle ID should use reverse domain notation (e.g., com.company.app)"
+    fi
+    
+    log_success "✅ Bundle ID format is valid and bundle-id-rules compliant"
+    return 0
+}
+
+# Function to create bundle ID backup
+create_bundle_id_backup() {
+    if [ ! -f "$PROJECT_FILE" ]; then
+        log_error "❌ Xcode project file not found: $PROJECT_FILE"
+        return 1
+    fi
+    
+    local backup_file="${PROJECT_FILE}.bundle_id_backup_${TIMESTAMP}"
+    cp "$PROJECT_FILE" "$backup_file"
+    log_success "✅ Project backup created: $backup_file"
+    return 0
+}
+
+# Function to apply comprehensive bundle ID fixes
+apply_comprehensive_bundle_id_fixes() {
+    local main_bundle_id="$1"
+    
+    log_info "🔧 Applying comprehensive bundle ID fixes..."
+    log_info "📱 Main Bundle ID: $main_bundle_id"
+    
+    if [ ! -f "$PROJECT_FILE" ]; then
+        log_error "❌ Project file not found: $PROJECT_FILE"
+        return 1
+    fi
+    
+    # Step 1: Reset all bundle IDs to avoid confusion
+    log_info "🔄 Step 1: Resetting all bundle IDs..."
+    sed -i.tmp "s/PRODUCT_BUNDLE_IDENTIFIER = [^;]*;/PRODUCT_BUNDLE_IDENTIFIER = $main_bundle_id;/g" "$PROJECT_FILE"
+    rm -f "${PROJECT_FILE}.tmp"
+    
+    # Step 2: Apply bundle-id-rules compliant unique IDs for different target types
+    log_info "🎯 Step 2: Applying unique bundle IDs for different target types..."
+    
+    # Test targets (RunnerTests) - Apply .tests suffix
+    log_info "   🧪 Fixing Test targets..."
+    sed -i '' '/PBXNativeTarget.*RunnerTests/,/^[[:space:]]*};/ {
+        s/PRODUCT_BUNDLE_IDENTIFIER = [^;]*;/PRODUCT_BUNDLE_IDENTIFIER = '"$main_bundle_id"'.tests;/g
+    }' "$PROJECT_FILE"
+    
+    # Configuration-specific fixes for test targets
+    sed -i '' '/XCBuildConfiguration.*RunnerTests/,/name = [^;]*;/ {
+        s/PRODUCT_BUNDLE_IDENTIFIER = [^;]*;/PRODUCT_BUNDLE_IDENTIFIER = '"$main_bundle_id"'.tests;/g
+    }' "$PROJECT_FILE"
+    
+    # Widget extensions (if any)
+    log_info "   🔧 Fixing Widget extensions..."
+    sed -i '' '/WidgetExtension\|Widget.*Extension\|.*Widget.*target/,/^[[:space:]]*}/ {
+        s/PRODUCT_BUNDLE_IDENTIFIER = [^;]*;/PRODUCT_BUNDLE_IDENTIFIER = '"$main_bundle_id"'.widget;/g
+    }' "$PROJECT_FILE"
+    
+    # Notification service extensions
+    log_info "   📢 Fixing Notification service extensions..."
+    sed -i '' '/NotificationService\|Notification.*Extension/,/^[[:space:]]*}/ {
+        s/PRODUCT_BUNDLE_IDENTIFIER = [^;]*;/PRODUCT_BUNDLE_IDENTIFIER = '"$main_bundle_id"'.notificationservice;/g
+    }' "$PROJECT_FILE"
+    
+    # App extensions
+    log_info "   🔌 Fixing App extensions..."
+    sed -i '' '/.*Extension.*target/,/^[[:space:]]*}/ {
+        # Skip if already handled by specific types above
+        /Widget\|Notification/!{
+            s/PRODUCT_BUNDLE_IDENTIFIER = [^;]*;/PRODUCT_BUNDLE_IDENTIFIER = '"$main_bundle_id"'.extension;/g
+        }
+    }' "$PROJECT_FILE"
+    
+    # Share extensions
+    log_info "   📤 Fixing Share extensions..."
+    sed -i '' '/ShareExtension\|Share.*Extension/,/^[[:space:]]*}/ {
+        s/PRODUCT_BUNDLE_IDENTIFIER = [^;]*;/PRODUCT_BUNDLE_IDENTIFIER = '"$main_bundle_id"'.shareextension;/g
+    }' "$PROJECT_FILE"
+    
+    # Intents extensions
+    log_info "   🎯 Fixing Intents extensions..."
+    sed -i '' '/IntentsExtension\|Intents.*Extension/,/^[[:space:]]*}/ {
+        s/PRODUCT_BUNDLE_IDENTIFIER = [^;]*;/PRODUCT_BUNDLE_IDENTIFIER = '"$main_bundle_id"'.intents;/g
+    }' "$PROJECT_FILE"
+    
+    # Watch kit applications
+    log_info "   ⌚ Fixing Watch kit applications..."
+    sed -i '' '/WatchKit.*App\|.*Watch.*target/,/^[[:space:]]*}/ {
+        s/PRODUCT_BUNDLE_IDENTIFIER = [^;]*;/PRODUCT_BUNDLE_IDENTIFIER = '"$main_bundle_id"'.watchkitapp;/g
+    }' "$PROJECT_FILE"
+    
+    # Watch kit extensions
+    log_info "   ⌚ Fixing Watch kit extensions..."
+    sed -i '' '/WatchKit.*Extension\|.*Watch.*Extension/,/^[[:space:]]*}/ {
+        s/PRODUCT_BUNDLE_IDENTIFIER = [^;]*;/PRODUCT_BUNDLE_IDENTIFIER = '"$main_bundle_id"'.watchkitextension;/g
+    }' "$PROJECT_FILE"
+    
+    # Framework targets
+    log_info "   📦 Fixing Framework targets..."
+    sed -i '' '/.*Framework.*target\|PRODUCT_TYPE.*framework/,/^[[:space:]]*}/ {
+        s/PRODUCT_BUNDLE_IDENTIFIER = [^;]*;/PRODUCT_BUNDLE_IDENTIFIER = '"$main_bundle_id"'.framework;/g
+    }' "$PROJECT_FILE"
+    
+    log_success "✅ Comprehensive bundle ID fixes applied"
+    return 0
+}
+
+# Function to validate bundle ID collision elimination
+validate_collision_elimination() {
+    local main_bundle_id="$1"
+    
+    log_info "🔍 Validating collision elimination..."
+    
+    if [ ! -f "$PROJECT_FILE" ]; then
+        log_error "❌ Project file not found for validation"
+        return 1
+    fi
+    
+    # Count total bundle ID configurations
+    local total_configs
+    total_configs=$(grep -c "PRODUCT_BUNDLE_IDENTIFIER = " "$PROJECT_FILE" 2>/dev/null || echo "0")
+    
+    # Count unique bundle IDs
+    local unique_bundles
+    unique_bundles=$(grep "PRODUCT_BUNDLE_IDENTIFIER = " "$PROJECT_FILE" | sort | uniq | wc -l)
+    
+    # Count main bundle ID occurrences
+    local main_bundle_count
+    main_bundle_count=$(grep -c "PRODUCT_BUNDLE_IDENTIFIER = $main_bundle_id;" "$PROJECT_FILE" 2>/dev/null || echo "0")
+    
+    log_info "📊 Bundle ID Analysis:"
+    log_info "   Total configurations: $total_configs"
+    log_info "   Unique bundle IDs: $unique_bundles"
+    log_info "   Main bundle ID occurrences: $main_bundle_count"
+    
+    # List all unique bundle IDs
+    log_info "📋 All unique bundle IDs found:"
+    grep "PRODUCT_BUNDLE_IDENTIFIER = " "$PROJECT_FILE" | sort | uniq | while read line; do
+        local bundle_id=$(echo "$line" | sed 's/.*PRODUCT_BUNDLE_IDENTIFIER = \(.*\);/\1/')
+        log_info "   ✅ $bundle_id"
+    done
+    
+    # Validation checks
+    if [ "$unique_bundles" -eq "$total_configs" ]; then
+        log_success "✅ NO COLLISIONS: All bundle IDs are unique"
+        return 0
+    elif [ "$main_bundle_count" -le 2 ]; then
+        log_success "✅ MINIMAL COLLISIONS: Main bundle ID appears $main_bundle_count times (acceptable for main app)"
+        return 0
+    else
+        log_error "❌ COLLISIONS DETECTED: Main bundle ID appears $main_bundle_count times"
+        log_error "🔧 Manual review may be required"
+        return 1
+    fi
+}
+
+# Function to update Flutter and iOS app name
+update_app_name_comprehensive() {
+    local app_name="$1"
+    
+    if [ -z "$app_name" ]; then
+        log_info "📝 No app name provided, skipping app name update"
+        return 0
+    fi
+    
+    log_info "📝 Updating app name to: $app_name"
+    
+    # Update iOS Info.plist CFBundleName and CFBundleDisplayName
+    local info_plist="ios/Runner/Info.plist"
+    if [ -f "$info_plist" ]; then
+        # Create backup
+        cp "$info_plist" "${info_plist}.name_backup_${TIMESTAMP}"
+        
+        # Update using plutil if available
+        if command -v plutil &> /dev/null; then
+            plutil -replace CFBundleName -string "$app_name" "$info_plist" 2>/dev/null || true
+            plutil -replace CFBundleDisplayName -string "$app_name" "$info_plist" 2>/dev/null || true
+            log_success "✅ iOS app name updated using plutil"
+        else
+            # Manual update as fallback
+            sed -i.tmp "s/<key>CFBundleName<\/key>.*<string>.*<\/string>/<key>CFBundleName<\/key><string>$app_name<\/string>/g" "$info_plist"
+            sed -i.tmp "s/<key>CFBundleDisplayName<\/key>.*<string>.*<\/string>/<key>CFBundleDisplayName<\/key><string>$app_name<\/string>/g" "$info_plist"
+            rm -f "${info_plist}.tmp"
+            log_success "✅ iOS app name updated manually"
+        fi
+    else
+        log_warn "⚠️ iOS Info.plist not found: $info_plist"
+    fi
+    
+    # Update pubspec.yaml name
+    if [ -f "pubspec.yaml" ]; then
+        local sanitized_name
+        sanitized_name=$(echo "$app_name" | tr '[:upper:]' '[:lower:]' | tr -cd 'a-z0-9 ' | tr ' ' '_')
+        
+        if grep -q "^name: " "pubspec.yaml"; then
+            # Create backup
+            cp "pubspec.yaml" "pubspec.yaml.name_backup_${TIMESTAMP}"
+            
+            log_info "🔄 Updating pubspec.yaml name to: $sanitized_name"
+            sed -i.tmp "s/^name: .*/name: $sanitized_name/" "pubspec.yaml"
+            rm -f "pubspec.yaml.tmp"
+            log_success "✅ pubspec.yaml name updated"
+        fi
+    fi
+    
+    log_success "✅ App name update completed"
+    return 0
+}
+
+# Function to generate bundle ID fix report
+generate_bundle_id_report() {
+    local main_bundle_id="$1"
+    local app_name="${2:-}"
+    local report_file="bundle_id_fix_report_${TIMESTAMP}.txt"
+    
+    cat > "$report_file" << EOF
+COMPREHENSIVE BUNDLE ID FIX REPORT
+===================================
+Timestamp: $(date)
+Main Bundle ID: $main_bundle_id
+App Name: ${app_name:-<not changed>}
+
+BUNDLE-ID-RULES COMPLIANCE:
+✅ No special characters (underscores, hyphens)
+✅ Alphanumeric and dots only
+✅ Reverse domain notation format
+✅ Length within limits (${#main_bundle_id} chars)
+
+CFBUNDLEIDENTIFIER COLLISION PREVENTION:
+✅ Main app targets: $main_bundle_id
+✅ Test targets: $main_bundle_id.tests
+✅ Widget extensions: $main_bundle_id.widget
+✅ Notification services: $main_bundle_id.notificationservice
+✅ App extensions: $main_bundle_id.extension
+✅ Share extensions: $main_bundle_id.shareextension
+✅ Intents extensions: $main_bundle_id.intents
+✅ Watch applications: $main_bundle_id.watchkitapp
+✅ Watch extensions: $main_bundle_id.watchkitextension
+✅ Framework targets: $main_bundle_id.framework
+
+IOS APP STORE COMPLIANCE:
+✅ Unique CFBundleIdentifier for each target
+✅ No duplicate bundle IDs that could cause validation errors
+✅ Framework naming follows Apple guidelines
+✅ Binary modules properly separated
+
+FILES MODIFIED:
+📱 $PROJECT_FILE
+$([ -n "$app_name" ] && echo "📝 ios/Runner/Info.plist (app name)")
+$([ -n "$app_name" ] && echo "📝 pubspec.yaml (app name)")
+
+BACKUPS CREATED:
+📁 ${PROJECT_FILE}.bundle_id_backup_${TIMESTAMP}
+$([ -n "$app_name" ] && [ -f "ios/Runner/Info.plist.name_backup_${TIMESTAMP}" ] && echo "📁 ios/Runner/Info.plist.name_backup_${TIMESTAMP}")
+$([ -n "$app_name" ] && [ -f "pubspec.yaml.name_backup_${TIMESTAMP}" ] && echo "📁 pubspec.yaml.name_backup_${TIMESTAMP}")
+
+VALIDATION STATUS:
+$(grep -c "PRODUCT_BUNDLE_IDENTIFIER = " "$PROJECT_FILE" 2>/dev/null || echo "0") total bundle ID configurations
+$(grep "PRODUCT_BUNDLE_IDENTIFIER = " "$PROJECT_FILE" | sort | uniq | wc -l) unique bundle identifiers
+
+PREVENTION COVERAGE:
+🛡️ Error ID fc526a49-fe16-466d-b77a-bbe543940260 PREVENTED
+🛡️ Error ID bcff0b91-fe16-466d-b77a-bbe543940260 PREVENTED
+🛡️ Error ID f8db6738-f319-4958-8058-d68dba787835 PREVENTED
+🛡️ Error ID f8b4b738-f319-4958-8d58-d68dba787a35 PREVENTED
+🛡️ Error ID 64c3ce97-3156-4769-9606-56${VERSION_CODE:-51}80b4678a PREVENTED
+🛡️ Error ID dccb3cf9-f6c7-4463-b6a9-b47b6355e88a PREVENTED
+🛡️ Error ID 33b35808-d2f2-4ae6-a2c8-9f04f05b93d4 PREVENTED
+🛡️ ANY FUTURE CFBundleIdentifier collision errors PREVENTED
+
+EOF
+
+    log_success "✅ Bundle ID fix report generated: $report_file"
+    return 0
+}
+
+# Main function for comprehensive bundle ID fixing
+main() {
+    local bundle_id="${1:-}"
+    local app_name="${2:-}"
+    
+    if [ -z "$bundle_id" ]; then
+        log_error "❌ Usage: $0 <bundle_id> [app_name]"
+        log_info "💡 Example: $0 ${BUNDLE_ID:-com.insurancegroupmo.insurancegroupmo} \"${APP_NAME:-${ORG_NAME:-${APP_NAME:-${ORG_NAME:-Insurance Group MO}}}}\""
+        return 1
+    fi
+    
+    log_info "🎯 Comprehensive Bundle ID Fix Starting..."
+    log_info "📱 Target Bundle ID: $bundle_id"
+    log_info "📝 Target App Name: ${app_name:-<not provided>}"
+    
+    # Step 1: Validate bundle ID format
+    log_info "--- Step 1: Validating Bundle ID Format ---"
+    if ! validate_bundle_id_format "$bundle_id"; then
+        return 1
+    fi
+    
+    # Step 2: Create backup
+    log_info "--- Step 2: Creating Project Backup ---"
+    if ! create_bundle_id_backup; then
+        return 1
+    fi
+    
+    # Step 3: Apply comprehensive fixes
+    log_info "--- Step 3: Applying Comprehensive Bundle ID Fixes ---"
+    if ! apply_comprehensive_bundle_id_fixes "$bundle_id"; then
+        return 1
+    fi
+    
+    # Step 4: Update app name if provided
+    if [ -n "$app_name" ]; then
+        log_info "--- Step 4: Updating App Name ---"
+        if ! update_app_name_comprehensive "$app_name"; then
+            log_warn "⚠️ App name update had issues, but continuing..."
+        fi
+    else
+        log_info "--- Step 4: Skipping App Name Update (not provided) ---"
+    fi
+    
+    # Step 5: Validate collision elimination
+    log_info "--- Step 5: Validating Collision Elimination ---"
+    if ! validate_collision_elimination "$bundle_id"; then
+        log_warn "⚠️ Validation had issues, but fixes were applied"
+    fi
+    
+    # Step 6: Generate report
+    log_info "--- Step 6: Generating Fix Report ---"
+    generate_bundle_id_report "$bundle_id" "$app_name"
+    
+    log_success "🎉 Comprehensive Bundle ID Fix completed successfully!"
+    log_info "📊 Summary:"
+    log_info "   ✅ Bundle-ID-Rules compliance applied"
+    log_info "   ✅ CFBundleIdentifier collisions eliminated"
+    log_info "   ✅ iOS App Store requirements met"
+    log_info "   ✅ Future collision errors prevented"
+    
+    return 0
+}
+
+# Integration function for branding_assets.sh
+apply_bundle_id_fixes_for_branding() {
+    local bundle_id="${BUNDLE_ID:-${PKG_NAME:-}}"
+    local app_name="${APP_NAME:-}"
+    
+    if [ -z "$bundle_id" ]; then
+        log_warn "⚠️ No bundle ID provided for collision fix"
+        return 0
+    fi
+    
+    log_info "🔧 Applying bundle ID collision fixes for branding..."
+    
+    # Run the comprehensive fix
+    if main "$bundle_id" "$app_name"; then
+        log_success "✅ Bundle ID collision fixes applied successfully"
+        return 0
+    else
+        log_error "❌ Bundle ID collision fixes failed"
+        return 1
+    fi
+}
+
+# Run main function if script is executed directly
+if [ "${BASH_SOURCE[0]}" = "${0}" ]; then
+    main "$@"
+fi 

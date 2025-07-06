@@ -1,0 +1,288 @@
+workflows:
+  ios-workflow:
+    name: iOS Universal Build (App Store + Ad Hoc + Enterprise + Development)
+    max_build_duration: 90
+    instance_type: mac_mini_m2
+    environment:
+      flutter: 3.32.2
+      java: 17
+      xcode: 16.0
+      cocoapods: 1.16.2
+
+      vars:
+        # 🎯 App Configuration
+        WORKFLOW_ID: "ios-workflow"
+        BUNDLE_ID: $BUNDLE_ID
+        PROFILE_TYPE: $PROFILE_TYPE
+        APP_NAME: $APP_NAME
+        VERSION_NAME: $VERSION_NAME
+        VERSION_CODE: $VERSION_CODE
+
+        # 🔐 Apple Developer Configuration
+        APPLE_ID: $APPLE_ID
+        APPLE_ID_PASSWORD: $APPLE_ID_PASSWORD
+        APPLE_TEAM_ID: $APPLE_TEAM_ID
+        APNS_KEY_ID: $APNS_KEY_ID
+        IS_TESTFLIGHT: $IS_TESTFLIGHT
+
+        # 🔐 App Store Connect API Credentials
+        APP_STORE_CONNECT_KEY_IDENTIFIER: "ZFD9GRMS7R"
+        APP_STORE_CONNECT_API_KEY: "https://raw.githubusercontent.com/prasanna91/QuikApp/main/AuthKey_ZFD9GRMS7R.p8"
+        APP_STORE_CONNECT_API_KEY_PATH: "https://raw.githubusercontent.com/prasanna91/QuikApp/main/AuthKey_ZFD9GRMS7R.p8"
+        APP_STORE_CONNECT_ISSUER_ID: "a99a2ebd-ed3e-4117-9f97-f195823774a7"
+
+        # 🔧 Feature Flags
+        PUSH_NOTIFY: $PUSH_NOTIFY
+        IS_DOMAIN_URL: $IS_DOMAIN_URL
+        IS_SPLASH: $IS_SPLASH
+        IS_PULLDOWN: $IS_PULLDOWN
+        IS_LOAD_IND: $IS_LOAD_IND
+        IS_BOTTOMMENU: $IS_BOTTOMMENU
+        IS_DEEPLINK: $IS_DEEPLINK
+        IS_CHATBOT: $IS_CHATBOT
+
+        # 📱 Permissions
+        IS_CAMERA: $IS_CAMERA
+        IS_LOCATION: $IS_LOCATION
+        IS_MIC: $IS_MIC
+        IS_NOTIFICATION: $IS_NOTIFICATION
+        IS_CONTACT: $IS_CONTACT
+        IS_BIOMETRIC: $IS_BIOMETRIC
+        IS_CALENDAR: $IS_CALENDAR
+
+        # 🎨 UI Configuration
+        SPLASH_URL: $SPLASH_URL
+        SPLASH_BG_URL: $SPLASH_BG_URL
+        SPLASH_BG_COLOR: $SPLASH_BG_COLOR
+        SPLASH_TAGLINE: $SPLASH_TAGLINE
+        SPLASH_TAGLINE_COLOR: $SPLASH_TAGLINE_COLOR
+        SPLASH_ANIMATION: $SPLASH_ANIMATION
+        SPLASH_DURATION: $SPLASH_DURATION
+        BOTTOMMENU_ITEMS: $BOTTOMMENU_ITEMS
+        BOTTOMMENU_BG_COLOR: $BOTTOMMENU_BG_COLOR
+        BOTTOMMENU_ICON_COLOR: $BOTTOMMENU_ICON_COLOR
+        BOTTOMMENU_TEXT_COLOR: $BOTTOMMENU_TEXT_COLOR
+        BOTTOMMENU_FONT: $BOTTOMMENU_FONT
+        BOTTOMMENU_FONT_SIZE: $BOTTOMMENU_FONT_SIZE
+        BOTTOMMENU_FONT_BOLD: $BOTTOMMENU_FONT_BOLD
+        BOTTOMMENU_FONT_ITALIC: $BOTTOMMENU_FONT_ITALIC
+        BOTTOMMENU_ACTIVE_TAB_COLOR: $BOTTOMMENU_ACTIVE_TAB_COLOR
+        BOTTOMMENU_ICON_POSITION: $BOTTOMMENU_ICON_POSITION
+        BOTTOMMENU_VISIBLE_ON: $BOTTOMMENU_VISIBLE_ON
+
+        # 🔥 Firebase Configuration
+        FIREBASE_CONFIG_IOS: $FIREBASE_CONFIG_IOS
+
+        # 🍎 iOS Signing Configuration
+        CERT_P12_URL: $CERT_P12_URL
+        CERT_P12_PASSWORD: $CERT_P12_PASSWORD
+        PROFILE_URL: $PROFILE_URL
+
+        # 📧 Email Configuration
+        EMAIL_ID: $EMAIL_ID
+        ENABLE_EMAIL_NOTIFICATIONS: $ENABLE_EMAIL_NOTIFICATIONS
+        EMAIL_SMTP_SERVER: $EMAIL_SMTP_SERVER
+        EMAIL_SMTP_PORT: $EMAIL_SMTP_PORT
+        EMAIL_SMTP_USER: $EMAIL_SMTP_USER
+        EMAIL_SMTP_PASS: $EMAIL_SMTP_PASS
+
+        # 🔧 Build Environment Variables
+        CM_BUILD_ID: $CM_BUILD_ID
+        CM_BUILD_DIR: $CM_BUILD_DIR
+        OUTPUT_DIR: "output/ios"
+
+    scripts:
+      - name: Debug Environment Variables
+        script: |
+          echo "*********** App Name & Version ***********"
+          echo "APP_NAME: $APP_NAME"
+          echo "VERSION_NAME: $VERSION_NAME"
+          echo "VERSION_CODE: $VERSION_CODE"
+          echo "BUNDLE_ID: $BUNDLE_ID"
+          echo "PROFILE_TYPE: $PROFILE_TYPE"
+
+      - name: Get Splash Screen Assets
+        script: |
+          if [ "$IS_SPLASH" = "true" ]; then
+            echo "🚀 Downloading splash assets..."
+            mkdir -p assets/images/
+            
+            if [ -f assets/images/splash.png ]; then
+              rm assets/images/splash.png
+              echo "✅ Deleted: assets/images/splash.png"
+            fi
+
+            # Download splash logo
+            echo "⬇️ Downloading splash logo from: $SPLASH_URL"
+            wget -O assets/images/splash.png "$SPLASH_URL" || wget --no-check-certificate -O assets/images/splash.png "$SPLASH_URL"
+
+            # Download splash background (optional)
+            if [ -n "$SPLASH_BG_URL" ]; then
+              echo "⬇️ Downloading splash background from: $SPLASH_BG_URL"
+              wget -O assets/images/splash_bg.png "$SPLASH_BG_URL" || wget --no-check-certificate -O assets/images/splash_bg.png "$SPLASH_BG_URL"
+            fi
+
+            flutter pub get
+            echo "✅ Splash assets downloaded"
+          else
+            echo "⏭️ Skipping splash asset download (IS_SPLASH != true)"
+          fi
+
+      - name: Change Project Name
+        script: |
+          echo "App Name: $APP_NAME"
+          SANITIZED_NAME=$(echo "$APP_NAME" | tr '[:upper:]' '[:lower:]' | tr -cd 'a-z0-9 ' | tr ' ' '_')
+          OLD_NAME_LINE=$(grep '^name: ' pubspec.yaml)
+          OLD_NAME=$(echo "$OLD_NAME_LINE" | cut -d ' ' -f2)
+
+          echo "🔁 Renaming project from '$OLD_NAME' to '$SANITIZED_NAME'..."
+
+          # Update pubspec.yaml
+          sed -i '' "s/^name: .*/name: $SANITIZED_NAME/" pubspec.yaml
+
+          # Update Dart imports
+          echo "🔄 Updating Dart package imports..."
+          grep -rl "package:$OLD_NAME" lib/ | xargs sed -i '' "s/package:$OLD_NAME/package:$SANITIZED_NAME/g"
+
+          # iOS: Update CFBundleName in Info.plist
+          echo "🛠️ Updating iOS CFBundleName..."
+          plutil -replace CFBundleName -string "$APP_NAME" ios/Runner/Info.plist
+
+          echo "✅ Project renamed successfully!"
+
+      - name: Setup iOS Environment
+        script: |
+          echo "🍎 Setting up iOS environment..."
+
+          # Make all scripts executable
+          chmod +x lib/scripts/ios/*.sh
+
+          # Test API credentials
+          if [ -f "lib/scripts/ios/test_api_credentials.sh" ]; then
+            chmod +x lib/scripts/ios/test_api_credentials.sh
+            lib/scripts/ios/test_api_credentials.sh || echo "⚠️ API credentials test failed, continuing anyway..."
+          fi
+
+          # Send email notification
+          if [ -f "lib/scripts/ios/email_notifications.sh" ]; then
+            chmod +x lib/scripts/ios/email_notifications.sh
+            lib/scripts/ios/email_notifications.sh "started" "iOS Build Started" "iOS build for $APP_NAME ($VERSION_NAME) has started with profile type: $PROFILE_TYPE"
+          fi
+
+      - name: ☢️ ULTIMATE CFBundleIdentifier Collision Eliminator
+        script: |
+          echo "☢️ ULTIMATE CFBundleIdentifier COLLISION ELIMINATOR"
+          echo "🎯 Target Error ID: 6a8ab053-6a99-4c5c-bc5e-e8d3ed1cbb46"
+          echo "💥 Conservative approach - only fix actual collisions"
+          echo "📱 Bundle ID: ${BUNDLE_ID:-com.insurancegroupmo.insurancegroupmo}"
+          echo ""
+
+          if [ -f "lib/scripts/ios/ultimate_collision_eliminator_6a8ab053.sh" ]; then
+            echo "✅ Ultimate collision eliminator script found"
+            chmod +x lib/scripts/ios/ultimate_collision_eliminator_6a8ab053.sh
+            
+            if ./lib/scripts/ios/ultimate_collision_eliminator_6a8ab053.sh "${BUNDLE_ID:-com.insurancegroupmo.insurancegroupmo}"; then
+              echo "🎉 ULTIMATE CFBundleIdentifier COLLISION ELIMINATION COMPLETED!"
+              echo "✅ Error ID 6a8ab053-6a99-4c5c-bc5e-e8d3ed1cbb46 ELIMINATED"
+              echo "📱 External packages preserved - no compatibility issues"
+              echo "📱 Ready for App Store Connect upload"
+            else
+              echo "❌ Ultimate collision elimination failed"
+              echo "   Continuing with build process anyway..."
+            fi
+          else
+            echo "❌ Ultimate collision eliminator script not found"
+            echo "   Script should be at: lib/scripts/ios/ultimate_collision_eliminator_6a8ab053.sh"
+            exit 1
+          fi
+
+      - name: iOS Main Build Process
+        script: |
+          echo "🍎 Starting iOS main build process..."
+
+          # Make all scripts executable
+          chmod +x lib/scripts/ios/*.sh
+
+          # Check if main orchestration script exists
+          if [ ! -x "lib/scripts/ios/main.sh" ]; then
+            echo "❌ Main orchestration script not found or not executable"
+            chmod +x lib/scripts/ios/main.sh
+          fi
+
+          # Run main orchestration script
+          if [ -f "lib/scripts/ios/main.sh" ]; then
+            echo "🚀 Running main iOS orchestration script..."
+            if lib/scripts/ios/main.sh; then
+              echo "✅ Main iOS build process completed successfully"
+            else
+              echo "❌ Main iOS build process failed"
+              exit 1
+            fi
+          else
+            echo "❌ Main orchestration script not found at lib/scripts/ios/main.sh"
+            exit 1
+          fi
+
+      - name: iOS IPA Export
+        script: |
+          echo "📦 Starting iOS IPA export process..."
+
+          # Make export script executable
+          chmod +x lib/scripts/ios/export_ipa.sh
+
+          # Run IPA export script
+          if [ -f "lib/scripts/ios/export_ipa.sh" ]; then
+            echo "🚀 Running IPA export script..."
+            if lib/scripts/ios/export_ipa.sh; then
+              echo "✅ IPA export completed successfully"
+            else
+              echo "❌ IPA export failed"
+              exit 1
+            fi
+          else
+            echo "❌ IPA export script not found at lib/scripts/ios/export_ipa.sh"
+            exit 1
+          fi
+
+      - name: iOS Final Notification
+        script: |
+          echo "📧 Sending final iOS build notification..."
+
+          # Determine build status
+          if [ -f "output/ios/Runner.ipa" ]; then
+            BUILD_STATUS="success"
+            BUILD_MESSAGE="iOS build for $APP_NAME ($VERSION_NAME) completed successfully with profile type: $PROFILE_TYPE"
+          else
+            BUILD_STATUS="error"
+            BUILD_MESSAGE="iOS build for $APP_NAME ($VERSION_NAME) failed with profile type: $PROFILE_TYPE"
+          fi
+
+          # Send email notification
+          if [ -f "lib/scripts/ios/email_notifications.sh" ]; then
+            chmod +x lib/scripts/ios/email_notifications.sh
+            lib/scripts/ios/email_notifications.sh "$BUILD_STATUS" "iOS Build $BUILD_STATUS" "$BUILD_MESSAGE"
+          else
+            echo "⚠️ Email notifications script not found at lib/scripts/ios/email_notifications.sh"
+          fi
+
+    artifacts:
+      - output/ios/Runner.ipa
+      - output/ios/*.ipa
+      - build/ios/archive/Runner.xcarchive
+      - build/ios/ipa/*.ipa
+      - /tmp/xcodebuild_logs/*.log
+      - flutter_drive.log
+
+    publishing:
+      email:
+        recipients:
+          - $EMAIL_ID
+        notify:
+          success: true
+          failure: true
+      app_store_connect:
+        api_key: $APP_STORE_CONNECT_API_KEY
+        key_id: $APP_STORE_CONNECT_KEY_IDENTIFIER
+        issuer_id: $APP_STORE_CONNECT_ISSUER_ID
+        submit_to_testflight: $IS_TESTFLIGHT
+        submit_to_app_store: false

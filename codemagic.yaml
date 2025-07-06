@@ -1,0 +1,1045 @@
+﻿# 🚀 Common Variables Block - Shared across all workflows
+common_vars: &common_vars # 🚀 Enhanced Build Success Rate Optimizations
+  GRADLE_OPTS: "-Xmx12G -XX:MaxMetaspaceSize=3G -XX:ReservedCodeCacheSize=1G -XX:+UseG1GC -XX:MaxGCPauseMillis=50 -XX:+UseStringDeduplication -XX:+OptimizeStringConcat -XX:+TieredCompilation -XX:TieredStopAtLevel=1"
+  XCODE_PARALLEL_JOBS: "8"
+
+  # 🔧 Build Stability Variables
+  GRADLE_DAEMON: "true"
+  GRADLE_PARALLEL: "true"
+  GRADLE_CACHING: "true"
+  GRADLE_OFFLINE: "false"
+  GRADLE_CONFIGURE_ON_DEMAND: "true"
+  GRADLE_BUILD_CACHE: "true"
+  GRADLE_WORKER_MAX_HEAP_SIZE: "2G"
+
+  # 🎯 Flutter Optimizations
+  FLUTTER_PUB_CACHE: "true"
+  FLUTTER_VERBOSE: "false"
+  FLUTTER_ANALYZE: "true"
+  FLUTTER_TEST: "false"
+  FLUTTER_BUILD_NUMBER: "auto"
+
+  # 📦 Asset & Network Optimizations
+  ASSET_OPTIMIZATION: "true"
+  IMAGE_COMPRESSION: "true"
+  PARALLEL_DOWNLOADS: "true"
+  DOWNLOAD_TIMEOUT: "300"
+  DOWNLOAD_RETRIES: "3"
+
+  # 🛡️ Error Prevention
+  FAIL_ON_WARNINGS: "false"
+  CONTINUE_ON_ERROR: "true"
+  RETRY_ON_FAILURE: "true"
+  MAX_RETRIES: "2"
+
+  # 📧 Email Notifications
+  ENABLE_EMAIL_NOTIFICATIONS: $ENABLE_EMAIL_NOTIFICATIONS
+  EMAIL_SMTP_SERVER: $EMAIL_SMTP_SERVER
+  EMAIL_SMTP_PORT: $EMAIL_SMTP_PORT
+  EMAIL_SMTP_USER: $EMAIL_SMTP_USER
+  EMAIL_SMTP_PASS: $EMAIL_SMTP_PASS
+
+  # 🔄 Build Recovery
+  ENABLE_BUILD_RECOVERY: "true"
+  CLEAN_ON_FAILURE: "true"
+  CACHE_ON_SUCCESS: "true"
+scripts:
+  - &debug_env
+    name: Debug Environment Variables
+    script: |
+      echo "*********** App Name & Version ***********"
+      echo "APP_NAME: $APP_NAME"
+      echo "ORG_NAME: $ORG_NAME"
+      echo "WEB_URL: $WEB_URL"
+      echo "VERSION_NAME: $VERSION_NAME"
+      echo "VERSION_CODE: $VERSION_CODE"
+      echo "PKG_NAME: $PKG_NAME"
+      echo "BUNDLE_ID: $BUNDLE_ID"
+
+      echo "*********** App Customization Configuration ***********"
+      echo "Splash screen: $IS_SPLASH"
+      echo "Pull to refresh: $IS_PULLDOWN"
+      echo "Loading indicators: $IS_LOAD_IND"
+      echo "Bottom navigation bar: $IS_BOTTOMMENU"
+      echo "Deep linking: $IS_DEEPLINK"
+
+      echo "*********** Push Notification Configuration ***********"
+      echo "PUSH_NOTIFY: $PUSH_NOTIFY"
+      echo "IS_CHATBOT: $IS_CHATBOT"
+
+      echo "*********** Android Keystore ***********"
+      echo "KEY_STORE: $KEY_STORE"
+      echo "CM_KEYSTORE_PASSWORD: $CM_KEYSTORE_PASSWORD"
+      echo "CM_KEY_ALIAS: $CM_KEY_ALIAS"
+      echo "CM_KEY_PASSWORD: $CM_KEY_PASSWORD"
+
+      echo "*********** IOS Keystore ***********"
+      echo "APP_STORE_CONNECT_ISSUER_ID: $APP_STORE_CONNECT_ISSUER_ID"
+      echo "APP_STORE_CONNECT_KEY_IDENTIFIER: $APP_STORE_CONNECT_KEY_IDENTIFIER"
+      echo "APNS_KEY_ID: $APNS_KEY_ID"
+      echo "TEAM_ID: $APPLE_TEAM_ID"
+      echo "APNS_AUTH_KEY_URL: $APNS_AUTH_KEY_URL"
+
+      echo "*********** Firebase Android config file ***********"
+      echo "firebase_config_android: $firebase_config_android"
+
+      echo "*********** Firebase IOS config file ***********"
+      echo "firebase_config_ios: $firebase_config_ios"
+
+      echo "*********** Splash Configuration ***********"
+      echo "SPLASH_URL: $SPLASH_URL"
+      echo "SPLASH_BG: $SPLASH_BG_URL"
+      echo "SPLASH_BG_COLOR: $SPLASH_BG_COLOR"
+      echo "SPLASH_TAGLINE: $SPLASH_TAGLINE"
+      echo "SPLASH_TAGLINE_COLOR: $SPLASH_TAGLINE_COLOR"
+      echo "SPLASH_ANIMATION: $SPLASH_ANIMATION"
+      echo "SPLASH_DURATION: $SPLASH_DURATION"
+
+      echo "*********** Bottom Navigation Configuration ***********"
+      echo "BOTTOMMENU_ITEMS: $BOTTOMMENU_ITEMS"
+      echo "BOTTOMMENU_BG_COLOR: $BOTTOMMENU_BG_COLOR"
+      echo "BOTTOMMENU_ICON_COLOR: $BOTTOMMENU_ICON_COLOR"
+      echo "BOTTOMMENU_TEXT_COLOR: $BOTTOMMENU_TEXT_COLOR"
+      echo "BOTTOMMENU_FONT: $BOTTOMMENU_FONT"
+      echo "BOTTOMMENU_FONT_SIZE: $BOTTOMMENU_FONT_SIZE"
+      echo "BOTTOMMENU_FONT_BOLD: $BOTTOMMENU_FONT_BOLD"
+      echo "BOTTOMMENU_FONT_ITALIC: $BOTTOMMENU_FONT_ITALIC"
+      echo "BOTTOMMENU_ACTIVE_TAB_COLOR: $BOTTOMMENU_ACTIVE_TAB_COLOR"
+      echo "BOTTOMMENU_ICON_POSITION: $BOTTOMMENU_ICON_POSITION"
+      echo "BOTTOMMENU_VISIBLE_ON: $BOTTOMMENU_VISIBLE_ON"
+
+      echo "*********** Permissions ***********"
+      echo "IS_CAMERA: $IS_CAMERA"
+      echo "IS_LOCATION: $IS_LOCATION"
+      echo "IS_MIC: $IS_MIC"
+      echo "IS_NOTIFICATION: $IS_NOTIFICATION"
+      echo "IS_CONTACT: $IS_CONTACT"
+      echo "IS_BIOMETRIC: $IS_BIOMETRIC"
+      echo "IS_CALENDAR: $IS_CALENDAR"
+
+      echo "*********** Publish Configuration ***********" 
+      echo "EMAIL_ID: $EMAIL_ID"
+
+  - &get_splash
+    name: Get splash screen image from splash image from Url
+    script: |
+      if [ "$IS_SPLASH" = "true" ]; then
+         if [ -f assets/images/splash.png ]; then
+          rm assets/images/splash.png
+          echo "✅ Deleted: assets/images/splash.png"
+          else
+          echo "⚠️ splash.png not found"
+          fi
+
+        echo "🚀 Started: Downloading splash assets"
+
+        mkdir -p assets/images/
+
+        # Download splash logo
+        echo "⬇️ Downloading splash logo from: $SPLASH"
+        wget -O assets/images/splash.png "$SPLASH"
+        if [ $? -ne 0 ]; then
+          echo "⚠️ Certificate issue or download failed. Retrying with --no-check-certificate..."
+          wget --no-check-certificate -O assets/images/splash.png "$SPLASH"
+        fi
+
+        if [ ! -f assets/images/splash.png ]; then
+          echo "❌ Error: Failed to download SPLASH logo"
+          exit 1
+        fi
+
+        # Download splash background (optional)
+        if [ -n "$SPLASH_BG" ]; then
+          echo "⬇️ Downloading splash background from: $SPLASH_BG"
+          wget -O assets/images/splash_bg.png "$SPLASH_BG"
+          if [ $? -ne 0 ]; then
+            echo "⚠️ Certificate issue or download failed. Retrying with --no-check-certificate..."
+            wget --no-check-certificate -O assets/images/splash_bg.png "$SPLASH_BG"
+          fi
+
+          if [ ! -f assets/images/splash_bg.png ]; then
+            echo "❌ Error: Failed to download SPLASH background"
+            exit 1
+          fi
+        else
+          echo "ℹ️ No SPLASH_BG provided, skipping background download"
+        fi
+
+        flutter pub get
+        echo "✅ Completed: Splash assets downloaded"
+      else
+        echo "⏭️ Skipping splash asset download (IS_SPLASH != true)"
+      fi
+
+  - &change_proj_name
+    name: Change Project Name
+    script: |
+      echo "App Name: $APP_NAME"
+      # 2️⃣ Sanitize: lowercase, remove special characters, replace spaces with underscores
+        SANITIZED_NAME=$(echo "$APP_NAME" | tr '[:upper:]' '[:lower:]' | tr -cd 'a-z0-9 ' | tr ' ' '_')
+
+      # 3️⃣ Extract old name from pubspec.yaml
+      OLD_NAME_LINE=$(grep '^name: ' pubspec.yaml)
+      OLD_NAME=$(echo "$OLD_NAME_LINE" | cut -d ' ' -f2)
+
+      echo "🔁 Renaming project from '$OLD_NAME' to '$SANITIZED_NAME'..."
+
+      # Update pubspec.yaml
+      sed -i '' "s/^name: .*/name: $SANITIZED_NAME/" pubspec.yaml
+
+      # Update Dart imports
+        echo "🔄 Updating Dart package imports..."
+        grep -rl "package:$OLD_NAME" lib/ | xargs sed -i '' "s/package:$OLD_NAME/package:$SANITIZED_NAME/g"
+
+
+
+        # iOS: Update CFBundleName in Info.plist
+        echo "🛠️ Updating iOS CFBundleName..."
+        plutil -replace CFBundleName -string "$APP_NAME" ios/Runner/Info.plist
+
+        # Optional: Rename folder (if not on CI/CD)
+        # cd ..
+        # mv "$OLD_NAME" "$SANITIZED_NAME"
+        # cd "$SANITIZED_NAME"
+
+        # Clean and get packages
+        flutter clean
+        flutter pub get
+
+        echo "✅ Project renamed to '$SANITIZED_NAME'"
+
+        echo "🚀 iOS CFBundleName set to '$APP_NAME'"
+
+  - &get_logo
+    name: Get logo image from logoUrl
+    script: |
+      echo "🧹 Deleting old splash and logo assets..."
+
+      if [ -f assets/images/logo.png ]; then
+      rm assets/images/logo.png
+      echo "✅ Deleted: assets/images/logo.png"
+      else
+      echo "⚠️ logo.png not found"
+      fi
+      echo "🚀 Started: Downloading logo from $LOGO_URL"
+
+      mkdir -p assets/images/
+
+      # Try downloading with SSL certificate check first (silent test)
+      wget --spider --quiet "$LOGO_URL"
+      if [ $? -ne 0 ]; then
+        echo "⚠️ SSL verification failed. Retrying with --no-check-certificate..."
+        WGET_OPTS="--no-check-certificate"
+      else
+        WGET_OPTS=""
+      fi
+
+      # Attempt actual download
+      wget $WGET_OPTS -O assets/images/logo.png "$LOGO_URL"
+
+      # Check if the file was successfully downloaded
+      if [ ! -f assets/images/logo.png ]; then
+        echo "❌ Error: Failed to download logo from $LOGO_URL"
+        exit 1
+      fi
+
+      flutter pub get
+      echo "✅ Completed: Logo downloaded"
+
+  - &set_launcher_icons
+    name: Generate Launcher Icons
+    script: |
+      echo "🚀 Generating launcher icons"
+
+      flutter pub get
+
+      # Generates launcher icons using flutter_launcher_icons configuration in pubspec.yaml
+      flutter pub run flutter_launcher_icons
+
+      echo "✅ Launcher icons generated successfully"
+
+  - &change_app_name
+    name: Change app name
+    script: |
+      echo "🚀 Changing app name to: $APP_NAME"
+
+        flutter pub run rename setAppName --value "$APP_NAME"
+        echo "🔢 VERSION_NAME: $VERSION_NAME"
+        echo "🔢 VERSION_CODE: $VERSION_CODE"
+          # Default values
+        VERSION_NAME="${VERSION_NAME:-1.0.0}"
+        VERSION_CODE="${VERSION_CODE:-100}"
+
+        # Check if VERSION_NAME is empty or not set
+        if [ -z "$VERSION_NAME" ]; then
+          VERSION_NAME=$DEFAULT_VERSION_NAME
+          echo "🔢 Setting DEFAULT_VERSION_NAME"
+        fi
+
+        # Check if VERSION_CODE is empty or not set
+        if [ -z "$VERSION_CODE" ]; then
+          VERSION_CODE=$DEFAULT_VERSION_CODE
+          echo "🔢 Setting DEFAULT_VERSION_CODE"
+        fi
+
+        echo "🔢 VERSION_NAME: $VERSION_NAME"
+        echo "🔢 VERSION_CODE: $VERSION_CODE"
+
+        echo "🔧 Ensuring valid version in pubspec.yaml: $VERSION_NAME+$VERSION_CODE"
+        # Replace or add version line in pubspec.yaml
+        if grep -q "^version: " pubspec.yaml; then
+          sed -i.bak -E "s/^version: .*/version: $VERSION_NAME+$VERSION_CODE/" pubspec.yaml
+        else
+        echo "version: $VERSION_NAME+$VERSION_CODE" >> pubspec.yaml
+        fi
+
+        flutter pub get
+
+        echo "✅ App name changed and version set successfully"
+
+  - &Update_SDK_Version
+    name: Updating SDK Version for Android & iOS (Conditional)
+    script: |
+      if [ "$PUSH_NOTIFY" = "true" ]; then
+        echo "🔧 Updating Android and iOS SDK versions..."
+
+        # ───── Android SDK Versions ─────
+        echo "📱 Updating Android minSdkVersion and targetSdkVersion in build.gradle.kts"
+        ANDROID_BUILD_FILE="android/app/build.gradle.kts"
+
+        if [ -f "$ANDROID_BUILD_FILE" ]; then
+          sed -i.bak -E "s/minSdkVersion\s*=\s*\d+/minSdkVersion = 21/" "$ANDROID_BUILD_FILE"
+          sed -i.bak -E "s/targetSdkVersion\s*=\s*\d+/targetSdkVersion = 34/" "$ANDROID_BUILD_FILE"
+          echo "✅ Android SDK versions updated in Kotlin DSL"
+        else
+          echo "⚠️ android/app/build.gradle.kts not found!"
+        fi
+
+        # ───── iOS Minimum Target Version ─────
+        echo "🍏 Updating iOS minimum deployment target in Podfile..."
+        PODFILE_PATH="ios/Podfile"
+        if [ -f "$PODFILE_PATH" ]; then
+          sed -i.bak -E "s/platform :ios, '[0-9.]+'/platform :ios, '13.0'/" "$PODFILE_PATH"
+          echo "✅ iOS minimum deployment target updated to 13.0"
+        else
+          echo "⚠️ Podfile not found. Skipping iOS deployment target update."
+        fi
+
+        # Optional: Update iOS Deployment Target in project.pbxproj
+        IOS_PROJECT_FILE="ios/Runner.xcodeproj/project.pbxproj"
+        if [ -f "$IOS_PROJECT_FILE" ]; then
+          sed -i '' -e "s/IPHONEOS_DEPLOYMENT_TARGET = .*;/IPHONEOS_DEPLOYMENT_TARGET = 13.0;/" "$IOS_PROJECT_FILE"
+          echo "✅ Xcode project iOS deployment target updated to 13.0"
+        fi
+
+      else
+        echo "🚫 SDK version update skipped (PUSH_NOTIFY is not true)"
+      fi
+
+  - &update_package_names
+    name: Update Android & iOS Package Name / Bundle ID
+    script: |
+      echo "🔧 Updating Android and iOS package name (bundle ID)..."
+
+      # Validate package/bundle ID format (Java-style, dot-separated)
+      if [[ ! "$PKG_NAME" =~ ^[a-zA-Z_][a-zA-Z0-9_]*(\.[a-zA-Z_][a-zA-Z0-9_]*)+$ ]]; then
+        echo "❌ ERROR: Invalid package/bundle identifier: $PKG_NAME"
+        exit 1
+      fi
+
+      echo "✔ Package name / Bundle ID: $PKG_NAME"
+
+      echo "────────────── ANDROID UPDATE ──────────────"
+      echo "📦 Updating Android package..."
+
+      # Update using rename package
+      flutter pub run rename setBundleId --value "$PKG_NAME"
+
+      # Update package name in AndroidManifest.xml
+      sed -i.bak "s/package=\"[^\"]*\"/package=\"$PKG_NAME\"/g" android/app/src/main/AndroidManifest.xml
+
+      # Update applicationId in Kotlin DSL
+      BUILD_FILE="android/app/build.gradle.kts"
+      if [ -f "$BUILD_FILE" ]; then
+        sed -i.bak -E "s/applicationId\s*=\s*\"[^\"]+\"/applicationId = \"$PKG_NAME\"/" "$BUILD_FILE"
+        echo "✅ Updated applicationId in Kotlin DSL"
+      else
+        echo "⚠️ build.gradle.kts not found. Skipping Android applicationId update."
+      fi
+
+      echo "✅ Android package updated."
+
+      echo "────────────── iOS UPDATE ──────────────"
+      echo "🍏 Updating iOS bundle identifier..."
+
+      IOS_PROJECT_FILE="ios/Runner.xcodeproj/project.pbxproj"
+      if [ -f "$IOS_PROJECT_FILE" ]; then
+        sed -i.bak "s/PRODUCT_BUNDLE_IDENTIFIER = .*;/PRODUCT_BUNDLE_IDENTIFIER = $PKG_NAME;/g" "$IOS_PROJECT_FILE"
+        echo "✅ iOS bundle identifier updated."
+      else
+        echo "❌ iOS project file not found at $IOS_PROJECT_FILE"
+        exit 1
+      fi
+
+  - &Update_App_Version
+    name: Update Version Info (Android & iOS)
+    script: |
+      # Generate dynamic version code using timestamp (or use default)
+      VERSION_NAME="${VERSION_NAME:-1.0.0}"
+      VERSION_CODE="${VERSION_CODE:-$(date +%Y%m%d%H%M)}"
+
+      echo "🔢 VERSION_NAME: $VERSION_NAME"
+      echo "🔢 VERSION_CODE: $VERSION_CODE"
+
+      # ───── pubspec.yaml ─────
+      echo "🔧 Updating pubspec.yaml..."
+      if grep -q "^version: " pubspec.yaml; then
+        sed -i'' -e "s/^version: .*/version: ${VERSION_NAME}+${VERSION_CODE}/" pubspec.yaml
+      else
+        echo "version: ${VERSION_NAME}+${VERSION_CODE}" >> pubspec.yaml
+      fi
+      echo "✅ pubspec.yaml version updated."
+
+      # ───── Android (Kotlin DSL) build.gradle.kts ─────
+      BUILD_FILE="android/app/build.gradle.kts"
+      if [ -f "$BUILD_FILE" ]; then
+        echo "🔧 Updating Android version in build.gradle.kts..."
+        sed -i'' -E "s/versionCode\s*=\s*[0-9]+/versionCode = ${VERSION_CODE}/" "$BUILD_FILE"
+        sed -i'' -E "s/versionName\s*=\s*\"[^\"]+\"/versionName = \"${VERSION_NAME}\"/" "$BUILD_FILE"
+        echo "✅ Android version updated in build.gradle.kts"
+      else
+        echo "❌ build.gradle.kts not found at $BUILD_FILE"
+        exit 1
+      fi
+
+      # ───── iOS project.pbxproj ─────
+      IOS_PROJECT_FILE="ios/Runner.xcodeproj/project.pbxproj"
+      if [ -f "$IOS_PROJECT_FILE" ]; then
+        echo "🔧 Updating iOS version in project.pbxproj..."
+        sed -i'' -e "s/MARKETING_VERSION = .*;/MARKETING_VERSION = ${VERSION_NAME};/" "$IOS_PROJECT_FILE"
+        sed -i'' -e "s/CURRENT_PROJECT_VERSION = .*;/CURRENT_PROJECT_VERSION = ${VERSION_CODE};/" "$IOS_PROJECT_FILE"
+        echo "✅ iOS version updated in project.pbxproj"
+      else
+        echo "❌ iOS project file not found at $IOS_PROJECT_FILE"
+        exit 1
+      fi
+
+# 📱 App Configuration Block
+app_config: &app_config
+  APP_ID: $APP_ID
+  BRANCH: $BRANCH
+  VERSION_NAME: $VERSION_NAME
+  VERSION_CODE: $VERSION_CODE
+  APP_NAME: $APP_NAME
+  ORG_NAME: $ORG_NAME
+  WEB_URL: $WEB_URL
+  EMAIL_ID: $EMAIL_ID
+  USER_NAME: $USER_NAME
+
+# 🔧 Feature Flags Block
+feature_flags: &feature_flags
+  PUSH_NOTIFY: $PUSH_NOTIFY
+  IS_DOMAIN_URL: $IS_DOMAIN_URL
+  IS_CHATBOT: $IS_CHATBOT
+  IS_SPLASH: $IS_SPLASH
+  IS_PULLDOWN: $IS_PULLDOWN
+  IS_BOTTOMMENU: $IS_BOTTOMMENU
+  IS_LOAD_IND: $IS_LOAD_IND
+
+# 🔐 Permissions Block
+permissions: &permissions
+  IS_CAMERA: $IS_CAMERA
+  IS_LOCATION: $IS_LOCATION
+  IS_MIC: $IS_MIC
+  IS_NOTIFICATION: $IS_NOTIFICATION
+  IS_CONTACT: $IS_CONTACT
+  IS_BIOMETRIC: $IS_BIOMETRIC
+  IS_CALENDAR: $IS_CALENDAR
+  IS_STORAGE: $IS_STORAGE
+
+# 🎨 UI Configuration Block
+ui_config: &ui_config
+  LOGO_URL: $LOGO_URL
+  SPLASH_URL: $SPLASH_URL
+  SPLASH_BG_URL: $SPLASH_BG_URL
+  SPLASH_BG_COLOR: $SPLASH_BG_COLOR
+  SPLASH_TAGLINE: $SPLASH_TAGLINE
+  SPLASH_TAGLINE_COLOR: $SPLASH_TAGLINE_COLOR
+  SPLASH_ANIMATION: $SPLASH_ANIMATION
+  SPLASH_DURATION: $SPLASH_DURATION
+
+  # 🎯 Bottom Menu Configuration
+  BOTTOMMENU_ITEMS: $BOTTOMMENU_ITEMS
+  BOTTOMMENU_BG_COLOR: $BOTTOMMENU_BG_COLOR
+  BOTTOMMENU_ICON_COLOR: $BOTTOMMENU_ICON_COLOR
+  BOTTOMMENU_TEXT_COLOR: $BOTTOMMENU_TEXT_COLOR
+  BOTTOMMENU_FONT: $BOTTOMMENU_FONT
+  BOTTOMMENU_FONT_SIZE: $BOTTOMMENU_FONT_SIZE
+  BOTTOMMENU_FONT_BOLD: $BOTTOMMENU_FONT_BOLD
+  BOTTOMMENU_FONT_ITALIC: $BOTTOMMENU_FONT_ITALIC
+  BOTTOMMENU_ACTIVE_TAB_COLOR: $BOTTOMMENU_ACTIVE_TAB_COLOR
+  BOTTOMMENU_ICON_POSITION: $BOTTOMMENU_ICON_POSITION
+
+# 🍎 iOS Build Acceleration Block
+ios_build_acceleration: &ios_build_acceleration
+  XCODE_FAST_BUILD: "true"
+  COCOAPODS_FAST_INSTALL: "true"
+  XCODE_SKIP_SIGNING: "false"
+  XCODE_OPTIMIZATION: "true"
+  XCODE_CLEAN_BUILD: "true"
+  XCODE_PARALLEL_BUILD: "true"
+
+# 🍎 iOS Signing Configuration Block
+ios_signing_config: &ios_signing_config
+  APNS_AUTH_KEY_URL: $APNS_AUTH_KEY_URL
+  CERT_PASSWORD: $CERT_PASSWORD
+  PROFILE_URL: $PROFILE_URL
+  CERT_P12_URL: $CERT_P12_URL
+  CERT_CER_URL: $CERT_CER_URL
+  CERT_KEY_URL: $CERT_KEY_URL
+  PROFILE_TYPE: $PROFILE_TYPE
+  APP_STORE_CONNECT_KEY_IDENTIFIER: $APP_STORE_CONNECT_KEY_IDENTIFIER
+  APP_STORE_CONNECT_ISSUER_ID: $APP_STORE_CONNECT_ISSUER_ID
+  APP_STORE_CONNECT_API_KEY_PATH: $APP_STORE_CONNECT_API_KEY_PATH
+  APPLE_TEAM_ID: $APPLE_TEAM_ID
+  APNS_KEY_ID: $APNS_KEY_ID
+  IS_TESTFLIGHT: $IS_TESTFLIGHT
+
+# 📱 iOS Distribution Options Block
+ios_distribution_options: &ios_distribution_options
+  ENABLE_DEVICE_SPECIFIC_BUILDS: $ENABLE_DEVICE_SPECIFIC_BUILDS
+  INSTALL_URL: $INSTALL_URL
+  DISPLAY_IMAGE_URL: $DISPLAY_IMAGE_URL
+  FULL_SIZE_IMAGE_URL: $FULL_SIZE_IMAGE_URL
+  THINNING: $THINNING
+
+# 🍎 iOS Development Options Block
+ios_development_options: &ios_development_options
+  ENABLE_DEBUG_BUILD: $ENABLE_DEBUG_BUILD
+  ENABLE_DEVICE_LOGGING: $ENABLE_DEVICE_LOGGING
+  ENABLE_DEBUG_SYMBOLS: $ENABLE_DEBUG_SYMBOLS
+
+workflows:
+  android-free:
+    name: Android Free Build
+    max_build_duration: 90
+    instance_type: mac_mini_m2
+    environment:
+      flutter: 3.32.2
+      java: 17
+      #      android_signing:
+      #        - keystore_reference
+      vars:
+        <<: *common_vars
+        <<: *app_config
+        WORKFLOW_ID: "android-free"
+        PKG_NAME: $PKG_NAME
+
+        # 🔧 Feature Flags (Optimized for Free - Override defaults)
+        <<: *feature_flags
+        PUSH_NOTIFY: "false"
+        IS_DOMAIN_URL: "false"
+        <<: *permissions
+        <<: *ui_config
+
+    scripts:
+      - name: 🚀 Android Free Build
+        script: |
+          echo "🚀 Starting Android Free Build (New-Rules Pattern)"
+          chmod +x lib/scripts/android-free/main.sh lib/scripts/utils/*.sh
+          ./lib/scripts/android-free/main.sh
+
+    artifacts:
+      - build/app/outputs/flutter-apk/app-release.apk
+      - output/android/app-release.apk
+      - build/app/outputs/mapping/release/mapping.txt
+      - build/app/outputs/logs/
+
+  android-paid:
+    name: Android Paid Build
+    max_build_duration: 90
+    instance_type: mac_mini_m2
+    environment:
+      flutter: 3.32.2
+      java: 17
+      #      android_signing:
+      #        - keystore_reference
+      vars:
+        <<: *common_vars
+        <<: *app_config
+        WORKFLOW_ID: "android-paid"
+        PKG_NAME: $PKG_NAME
+
+        # 🔧 Feature Flags (Paid Features)
+        <<: *feature_flags
+        <<: *permissions
+        <<: *ui_config
+
+        # 🔥 Firebase Configuration
+        FIREBASE_CONFIG_ANDROID: $FIREBASE_CONFIG_ANDROID
+
+    scripts:
+      - name: 🚀 Android Paid Build
+        script: |
+          echo "🚀 Starting Android Paid Build (New-Rules Pattern)"
+          chmod +x lib/scripts/android-paid/main.sh lib/scripts/utils/*.sh
+          ./lib/scripts/android-paid/main.sh
+
+    artifacts:
+      - build/app/outputs/flutter-apk/app-release.apk
+      - output/android/app-release.apk
+      - build/app/outputs/mapping/release/mapping.txt
+      - build/app/outputs/logs/
+
+  android-publish:
+    name: Android Publish Build
+    max_build_duration: 120
+    instance_type: mac_mini_m2
+    environment:
+      flutter: 3.32.2
+      java: 17
+      #      android_signing:
+      #        - keystore_reference
+      vars:
+        <<: *common_vars
+        MAX_RETRIES: "3" # Override for publish workflow
+        <<: *app_config
+        WORKFLOW_ID: "android-publish"
+        PKG_NAME: $PKG_NAME
+
+        # 🔧 Feature Flags (Production Features)
+        <<: *feature_flags
+        <<: *permissions
+        <<: *ui_config
+
+        # 🔥 Firebase Configuration
+        FIREBASE_CONFIG_ANDROID: $FIREBASE_CONFIG_ANDROID
+
+        # 🔐 Keystore Configuration
+        KEY_STORE_URL: $KEY_STORE_URL
+        CM_KEYSTORE_PASSWORD: $CM_KEYSTORE_PASSWORD
+        CM_KEY_ALIAS: $CM_KEY_ALIAS
+        CM_KEY_PASSWORD: $CM_KEY_PASSWORD
+
+    scripts:
+      - name: 🚀 Android Publish Build
+        script: |
+          echo "🚀 Starting Android Publish Build (New-Rules Pattern)"
+          chmod +x lib/scripts/android-publish/main.sh lib/scripts/utils/*.sh
+          ./lib/scripts/android-publish/main.sh
+
+    artifacts:
+      - build/app/outputs/flutter-apk/app-release.apk
+      - build/app/outputs/bundle/release/app-release.aab
+      - output/android/app-release.apk
+      - output/android/app-release.aab
+      - build/app/outputs/mapping/release/mapping.txt
+      - build/app/outputs/logs/
+
+  # 🔍 iOS Verification Workflow
+  ios-verification:
+    name: iOS Workflow Verification & Testing
+    max_build_duration: 30
+    instance_type: mac_mini_m2
+    environment:
+      flutter: 3.32.2
+      java: 17
+      xcode: 16.0
+      cocoapods: 1.16.2
+      vars:
+        <<: *common_vars
+        <<: *app_config
+        WORKFLOW_ID: "ios-verification"
+        BUNDLE_ID: $BUNDLE_ID
+        PROFILE_TYPE: "app-store" # Will test both app-store and ad-hoc
+
+        # 🔧 Feature Flags (for testing)
+        PUSH_NOTIFY: $PUSH_NOTIFY
+        IS_DOMAIN_URL: $IS_DOMAIN_URL
+        <<: *feature_flags
+        <<: *permissions
+        <<: *ui_config
+
+        # 🔥 Firebase Configuration (for testing)
+        FIREBASE_CONFIG_IOS: $FIREBASE_CONFIG_IOS
+
+        # 📧 Email Configuration (optional for verification)
+        ENABLE_EMAIL_NOTIFICATIONS: false # Disabled for verification
+
+    scripts:
+      - name: 🚀 iOS Verification Build
+        script: |
+          echo "🚀 Starting iOS Verification Build (New-Rules Pattern)"
+          chmod +x lib/scripts/ios-verification/main.sh lib/scripts/utils/*.sh
+          ./lib/scripts/ios-verification/main.sh
+
+    artifacts:
+      # 📊 Verification Reports
+      - output/verification/*.txt
+      - output/verification/*.log
+      - output/verification/logs/*
+      - output/verification/artifacts/*
+
+  ios-workflow:
+    name: iOS Universal Build (App Store + Ad Hoc + Enterprise + Development)
+    max_build_duration: 90
+    instance_type: mac_mini_m2
+    environment:
+      flutter: 3.32.2
+      java: 17
+      xcode: 16.0
+      cocoapods: 1.16.2
+      vars:
+        <<: *common_vars
+        <<: *ios_build_acceleration
+        <<: *app_config
+        WORKFLOW_ID: "ios-workflow"
+        BUNDLE_ID: $BUNDLE_ID
+        PROFILE_TYPE: $PROFILE_TYPE # app-store, ad-hoc, enterprise, development
+
+        # 🔐 Simple Apple Developer Configuration (Optional)
+        APPLE_ID: $APPLE_ID # Optional: Your Apple Developer email
+        APPLE_ID_PASSWORD: $APPLE_ID_PASSWORD # Optional: App-specific password
+        APPLE_TEAM_ID: $APPLE_TEAM_ID # Optional but recommended: Your team ID
+
+        # 📱 iOS Signing Configuration
+        APNS_KEY_ID: $APNS_KEY_ID
+        IS_TESTFLIGHT: $IS_TESTFLIGHT
+
+        # 🔐 App Store Connect API Credentials (for TestFlight upload)
+        APP_STORE_CONNECT_KEY_IDENTIFIER: $APP_STORE_CONNECT_KEY_IDENTIFIER
+        APP_STORE_CONNECT_API_KEY: $APP_STORE_CONNECT_API_KEY
+        APP_STORE_CONNECT_API_KEY_PATH: $APP_STORE_CONNECT_API_KEY_PATH
+        APP_STORE_CONNECT_ISSUER_ID: $APP_STORE_CONNECT_ISSUER_ID
+
+        # 🔧 Feature Flags
+        PUSH_NOTIFY: $PUSH_NOTIFY
+        IS_DOMAIN_URL: $IS_DOMAIN_URL
+        <<: *feature_flags
+        <<: *permissions
+        <<: *ui_config
+
+        # 🔥 Firebase Configuration
+        FIREBASE_CONFIG_IOS: $FIREBASE_CONFIG_IOS
+
+        # 🍎 iOS Signing Configuration (Universal - All Profile Types)
+        <<: *ios_signing_config
+
+        # 📱 iOS Distribution Options
+        <<: *ios_distribution_options
+
+        # 🍎 iOS Development Options
+        <<: *ios_development_options
+
+        # 📧 Email Configuration (for notifications)
+        ENABLE_EMAIL_NOTIFICATIONS: $ENABLE_EMAIL_NOTIFICATIONS
+        EMAIL_SMTP_SERVER: $EMAIL_SMTP_SERVER
+        EMAIL_SMTP_PORT: $EMAIL_SMTP_PORT
+        EMAIL_SMTP_USER: $EMAIL_SMTP_USER
+        EMAIL_SMTP_PASS: $EMAIL_SMTP_PASS
+
+        # 🔧 Build Environment Variables
+        CM_BUILD_ID: $CM_BUILD_ID
+        CM_BUILD_DIR: $CM_BUILD_DIR
+        OUTPUT_DIR: "output/ios"
+
+    scripts:
+      - name: 🚀 iOS Universal Build
+        script: |
+          echo "🚀 Starting iOS Universal Build (New-Rules Pattern)"
+          chmod +x lib/scripts/ios/main.sh lib/scripts/utils/*.sh
+          ./lib/scripts/ios/main.sh
+
+    artifacts:
+      # 📱 IPA Files (Primary artifacts)
+      - output/ios/*.ipa
+      - output/ios/*_collision_free.ipa # Collision-free IPA for App Store
+      - output/ios/*_AppStoreConnect_Fixed.ipa # App Store Connect compatible IPA
+      - output/ios/*_Nuclear_AppStore_Fixed.ipa # NUCLEAR App Store Connect backup IPA
+      - output/ios/*_Nuclear_AppStore_*.ipa # NUCLEAR IPA Error ID 202240a2 - UPLOAD READY
+      - build/ios/ipa/*.ipa
+      - ios/build/*.ipa
+      - "*.ipa"
+
+      # 📦 Archive Files (When IPA export fails)
+      - output/ios/*.xcarchive
+      - build/ios/archive/*.xcarchive
+      - ios/build/*.xcarchive
+      - "*.xcarchive"
+
+      # 📋 Build Documentation
+      - output/ios/ARTIFACTS_SUMMARY.txt
+      - output/ios/TROUBLESHOOTING_GUIDE.txt
+      - output/ios/PERMISSIONS_SUMMARY.txt
+      - ios/ExportOptions.plist
+
+      # ☢️ Nuclear Collision Elimination Reports (Error ID: 202240a2)
+      - output/ios/nuclear_elimination_report_*.txt
+      - output/ios/nuclear_ipa_modification_report_*.txt
+      - nuclear_elimination_report_*.txt
+      - nuclear_ipa_workspace_*/nuclear_analysis_results.txt
+
+      # 📊 Build Logs
+      - build/ios/logs/
+      - output/ios/logs/
+
+      # 🔧 Additional Build Artifacts
+      - output/ios/
+      - build/ios/
+
+  ios-workflow2:
+    name: iOS Workflow 2
+    instance_type: mac_mini_m1
+    max_build_duration: 120
+    environment:
+      flutter: stable
+      xcode: latest
+      cocoapods: 1.13.0
+      vars:
+        # Workflow Configuration
+        WORKFLOW_ID: "ios-workflow2"
+
+        # Build optimization variables
+        GRADLE_OPTS: "-Xmx12G -XX:MaxMetaspaceSize=3G -XX:ReservedCodeCacheSize=1G -XX:+UseG1GC -XX:MaxGCPauseMillis=50 -XX:+UseStringDeduplication -XX:+OptimizeStringConcat -XX:+TieredCompilation -XX:TieredStopAtLevel=1"
+        XCODE_PARALLEL_JOBS: "8"
+        GRADLE_DAEMON: "true"
+        GRADLE_PARALLEL: "true"
+        GRADLE_CACHING: "true"
+        GRADLE_OFFLINE: "false"
+        GRADLE_CONFIGURE_ON_DEMAND: "true"
+        GRADLE_BUILD_CACHE: "true"
+        GRADLE_WORKER_MAX_HEAP_SIZE: "2G"
+        FLUTTER_PUB_CACHE: "true"
+        FLUTTER_VERBOSE: "false"
+        FLUTTER_ANALYZE: "true"
+        FLUTTER_TEST: "false"
+        FLUTTER_BUILD_NUMBER: "auto"
+        ASSET_OPTIMIZATION: "true"
+        IMAGE_COMPRESSION: "true"
+        PARALLEL_DOWNLOADS: "true"
+        DOWNLOAD_TIMEOUT: "300"
+        DOWNLOAD_RETRIES: "3"
+        FAIL_ON_WARNINGS: "false"
+        CONTINUE_ON_ERROR: "true"
+        RETRY_ON_FAILURE: "true"
+        MAX_RETRIES: "2"
+
+        # Email Configuration
+        ENABLE_EMAIL_NOTIFICATIONS: $ENABLE_EMAIL_NOTIFICATIONS
+        EMAIL_SMTP_SERVER: $EMAIL_SMTP_SERVER
+        EMAIL_SMTP_PORT: $EMAIL_SMTP_PORT
+        EMAIL_SMTP_USER: $EMAIL_SMTP_USER
+        EMAIL_SMTP_PASS: $EMAIL_SMTP_PASS
+        ENABLE_BUILD_RECOVERY: "true"
+        CLEAN_ON_FAILURE: "true"
+        CACHE_ON_SUCCESS: "true"
+
+        # App Configuration Variables
+        USER_NAME: $USER_NAME
+        APP_ID: $APP_ID
+        BRANCH: $BRANCH
+        VERSION_NAME: $VERSION_NAME
+        VERSION_CODE: $VERSION_CODE
+        APP_NAME: $APP_NAME
+        ORG_NAME: $ORG_NAME
+        WEB_URL: $WEB_URL
+        PKG_NAME: $PKG_NAME
+        BUNDLE_ID: $BUNDLE_ID
+        PUSH_NOTIFY: $PUSH_NOTIFY
+        IS_CHATBOT: $IS_CHATBOT
+        IS_DOMAIN_URL: $IS_DOMAIN_URL
+
+        # Feature Flags
+        IS_SPLASH: $IS_SPLASH
+        IS_PULLDOWN: $IS_PULLDOWN
+        IS_BOTTOMMENU: $IS_BOTTOMMENU
+        IS_LOAD_IND: $IS_LOAD_IND
+        IS_DEEPLINK: $IS_DEEPLINK
+
+        # Permissions
+        IS_CAMERA: $IS_CAMERA
+        IS_LOCATION: $IS_LOCATION
+        IS_MIC: $IS_MIC
+        IS_NOTIFICATION: $IS_NOTIFICATION
+        IS_CONTACT: $IS_CONTACT
+        IS_BIOMETRIC: $IS_BIOMETRIC
+        IS_CALENDAR: $IS_CALENDAR
+        IS_STORAGE: $IS_STORAGE
+
+        # UI Configuration
+        LOGO_URL: $LOGO_URL
+        SPLASH_URL: $SPLASH_URL
+        SPLASH_BG_URL: $SPLASH_BG_URL
+        SPLASH: $SPLASH
+        SPLASH_BG: $SPLASH_BG
+        SPLASH_BG_COLOR: $SPLASH_BG_COLOR
+        SPLASH_TAGLINE: $SPLASH_TAGLINE
+        SPLASH_TAGLINE_COLOR: $SPLASH_TAGLINE_COLOR
+        SPLASH_ANIMATION: $SPLASH_ANIMATION
+        SPLASH_DURATION: $SPLASH_DURATION
+
+        # Bottom Menu Configuration
+        BOTTOMMENU_ITEMS: $BOTTOMMENU_ITEMS
+        BOTTOMMENU_BG_COLOR: $BOTTOMMENU_BG_COLOR
+        BOTTOMMENU_ICON_COLOR: $BOTTOMMENU_ICON_COLOR
+        BOTTOMMENU_TEXT_COLOR: $BOTTOMMENU_TEXT_COLOR
+        BOTTOMMENU_FONT: $BOTTOMMENU_FONT
+        BOTTOMMENU_FONT_SIZE: $BOTTOMMENU_FONT_SIZE
+        BOTTOMMENU_FONT_BOLD: $BOTTOMMENU_FONT_BOLD
+        BOTTOMMENU_FONT_ITALIC: $BOTTOMMENU_FONT_ITALIC
+        BOTTOMMENU_ACTIVE_TAB_COLOR: $BOTTOMMENU_ACTIVE_TAB_COLOR
+        BOTTOMMENU_ICON_POSITION: $BOTTOMMENU_ICON_POSITION
+        BOTTOMMENU_VISIBLE_ON: $BOTTOMMENU_VISIBLE_ON
+
+        # Firebase Configuration
+        FIREBASE_CONFIG_ANDROID: $FIREBASE_CONFIG_ANDROID
+        FIREBASE_CONFIG_IOS: $FIREBASE_CONFIG_IOS
+        firebase_config_android: $firebase_config_android
+        firebase_config_ios: $firebase_config_ios
+
+        # iOS Code Signing Variables
+        CERT_CER_URL: $CERT_CER_URL
+        CERT_KEY_URL: $CERT_KEY_URL
+        CERT_PASSWORD: $CERT_PASSWORD
+        CERT_P12_URL: $CERT_P12_URL
+        KEYCHAIN_PASSWORD: $KEYCHAIN_PASSWORD
+        PROFILE_URL: $PROFILE_URL
+        PROFILE_TYPE: $PROFILE_TYPE
+        APPLE_TEAM_ID: $APPLE_TEAM_ID
+        EMAIL_ID: $EMAIL_ID
+        XCODE_WORKSPACE: "ios/Runner.xcworkspace"
+        XCODE_SCHEME: "Runner"
+        APP_STORE_CONNECT_ISSUER_ID: $APP_STORE_CONNECT_ISSUER_ID
+        APP_STORE_CONNECT_KEY_IDENTIFIER: $APP_STORE_CONNECT_KEY_IDENTIFIER
+        APP_STORE_CONNECT_API_KEY_PATH: $APP_STORE_CONNECT_API_KEY_PATH
+        APNS_KEY_ID: $APNS_KEY_ID
+        APNS_AUTH_KEY_URL: $APNS_AUTH_KEY_URL
+        IS_TESTFLIGHT: $IS_TESTFLIGHT
+
+        # Android Keystore (for reference)
+        KEY_STORE_URL: $KEY_STORE_URL
+        KEY_STORE: $KEY_STORE
+        CM_KEYSTORE_PASSWORD: $CM_KEYSTORE_PASSWORD
+        CM_KEY_ALIAS: $CM_KEY_ALIAS
+        CM_KEY_PASSWORD: $CM_KEY_PASSWORD
+    scripts:
+      - name: 🚀 iOS Workflow 2 Build
+        script: |
+          echo "🚀 Starting iOS Workflow 2 Build (New-Rules Pattern)"
+          chmod +x lib/scripts/ios-workflow2/main.sh lib/scripts/utils/*.sh
+          ./lib/scripts/ios-workflow2/main.sh
+    artifacts:
+      - build/ios_output/Runner.ipa
+      - build/ios/ipa/*.ipa
+      - build/ios/archive/Runner.xcarchive
+      - flutter_build_ios.log
+      - build/ios/iphoneos/Runner.app
+      - $CM_BUILD_DIR/ios_output/*.ipa
+      - $CM_BUILD_DIR/*.p12
+      - /tmp/xcodebuild_logs/*.log
+
+  ios-workflow3:
+    name: iOS Universal Build (App Store + Ad Hoc + Enterprise + Development)
+    max_build_duration: 90
+    instance_type: mac_mini_m2
+    environment:
+      flutter: 3.32.2
+      java: 17
+      xcode: 16.0
+      cocoapods: 1.16.2
+      vars:
+        # 🎯 App Configuration
+        WORKFLOW_ID: "ios-workflow"
+        BUNDLE_ID: $BUNDLE_ID
+        PROFILE_TYPE: $PROFILE_TYPE
+        APP_NAME: $APP_NAME
+        VERSION_NAME: $VERSION_NAME
+        VERSION_CODE: $VERSION_CODE
+
+        # 🔐 Apple Developer Configuration
+        APPLE_ID: $APPLE_ID
+        APPLE_ID_PASSWORD: $APPLE_ID_PASSWORD
+        APPLE_TEAM_ID: $APPLE_TEAM_ID
+        APNS_KEY_ID: $APNS_KEY_ID
+        IS_TESTFLIGHT: $IS_TESTFLIGHT
+
+        # 🔐 App Store Connect API Credentials
+        APP_STORE_CONNECT_KEY_IDENTIFIER: "ZFD9GRMS7R"
+        APP_STORE_CONNECT_API_KEY: "https://raw.githubusercontent.com/prasanna91/QuikApp/main/AuthKey_ZFD9GRMS7R.p8"
+        APP_STORE_CONNECT_API_KEY_PATH: "https://raw.githubusercontent.com/prasanna91/QuikApp/main/AuthKey_ZFD9GRMS7R.p8"
+        APP_STORE_CONNECT_ISSUER_ID: "a99a2ebd-ed3e-4117-9f97-f195823774a7"
+
+        # 🔧 Feature Flags
+        PUSH_NOTIFY: $PUSH_NOTIFY
+        IS_DOMAIN_URL: $IS_DOMAIN_URL
+        IS_SPLASH: $IS_SPLASH
+        IS_PULLDOWN: $IS_PULLDOWN
+        IS_LOAD_IND: $IS_LOAD_IND
+        IS_BOTTOMMENU: $IS_BOTTOMMENU
+        IS_DEEPLINK: $IS_DEEPLINK
+        IS_CHATBOT: $IS_CHATBOT
+
+        # 📱 Permissions
+        IS_CAMERA: $IS_CAMERA
+        IS_LOCATION: $IS_LOCATION
+        IS_MIC: $IS_MIC
+        IS_NOTIFICATION: $IS_NOTIFICATION
+        IS_CONTACT: $IS_CONTACT
+        IS_BIOMETRIC: $IS_BIOMETRIC
+        IS_CALENDAR: $IS_CALENDAR
+
+        # 🎨 UI Configuration
+        SPLASH_URL: $SPLASH_URL
+        SPLASH_BG_URL: $SPLASH_BG_URL
+        SPLASH_BG_COLOR: $SPLASH_BG_COLOR
+        SPLASH_TAGLINE: $SPLASH_TAGLINE
+        SPLASH_TAGLINE_COLOR: $SPLASH_TAGLINE_COLOR
+        SPLASH_ANIMATION: $SPLASH_ANIMATION
+        SPLASH_DURATION: $SPLASH_DURATION
+        BOTTOMMENU_ITEMS: $BOTTOMMENU_ITEMS
+        BOTTOMMENU_BG_COLOR: $BOTTOMMENU_BG_COLOR
+        BOTTOMMENU_ICON_COLOR: $BOTTOMMENU_ICON_COLOR
+        BOTTOMMENU_TEXT_COLOR: $BOTTOMMENU_TEXT_COLOR
+        BOTTOMMENU_FONT: $BOTTOMMENU_FONT
+        BOTTOMMENU_FONT_SIZE: $BOTTOMMENU_FONT_SIZE
+        BOTTOMMENU_FONT_BOLD: $BOTTOMMENU_FONT_BOLD
+        BOTTOMMENU_FONT_ITALIC: $BOTTOMMENU_FONT_ITALIC
+        BOTTOMMENU_ACTIVE_TAB_COLOR: $BOTTOMMENU_ACTIVE_TAB_COLOR
+        BOTTOMMENU_ICON_POSITION: $BOTTOMMENU_ICON_POSITION
+        BOTTOMMENU_VISIBLE_ON: $BOTTOMMENU_VISIBLE_ON
+
+        # 🔥 Firebase Configuration
+        FIREBASE_CONFIG_IOS: $FIREBASE_CONFIG_IOS
+
+        # 🍎 iOS Signing Configuration
+        CERT_P12_URL: $CERT_P12_URL
+        CERT_P12_PASSWORD: $CERT_P12_PASSWORD
+        PROFILE_URL: $PROFILE_URL
+
+        # 📧 Email Configuration
+        EMAIL_ID: $EMAIL_ID
+        ENABLE_EMAIL_NOTIFICATIONS: $ENABLE_EMAIL_NOTIFICATIONS
+        EMAIL_SMTP_SERVER: $EMAIL_SMTP_SERVER
+        EMAIL_SMTP_PORT: $EMAIL_SMTP_PORT
+        EMAIL_SMTP_USER: $EMAIL_SMTP_USER
+        EMAIL_SMTP_PASS: $EMAIL_SMTP_PASS
+
+        # 🔧 Build Environment Variables
+        CM_BUILD_ID: $CM_BUILD_ID
+        CM_BUILD_DIR: $CM_BUILD_DIR
+        OUTPUT_DIR: "output/ios"
+
+    scripts:
+      - name: 🚀 iOS Workflow 3 Build
+        script: |
+          echo "🚀 Starting iOS Workflow 3 Build (New-Rules Pattern)"
+          chmod +x lib/scripts/ios-workflow3/main.sh lib/scripts/utils/*.sh
+          ./lib/scripts/ios-workflow3/main.sh
+
+    artifacts:
+      - output/ios/Runner.ipa
+      - output/ios/*.ipa
+      - build/ios/archive/Runner.xcarchive
+      - build/ios/ipa/*.ipa
+      - /tmp/xcodebuild_logs/*.log
+      - flutter_drive.log

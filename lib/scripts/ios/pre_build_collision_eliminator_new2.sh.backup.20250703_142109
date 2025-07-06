@@ -1,0 +1,131 @@
+#!/bin/bash
+
+# Dynamic Pre-Build Collision Eliminator
+# Auto-generated for Error ID: SHORT_ID_PLACEHOLDER
+# Target Error: FULL_ID_PLACEHOLDER
+
+set -euo pipefail
+
+SCRIPT_DIR="$(dirname "$0")"
+source "${SCRIPT_DIR}/utils.sh"
+
+ERROR_ID="SHORT_ID_PLACEHOLDER"
+FULL_ERROR_ID="FULL_ID_PLACEHOLDER"
+TARGET_BUNDLE_ID="${BUNDLE_ID:-${BUNDLE_ID:-com.insurancegroupmo.insurancegroupmo}}"
+PROJECT_FILE="ios/Runner.xcodeproj/project.pbxproj"
+TIMESTAMP=$(date +%Y%m%d_%H%M%S)
+
+log_info "🎯 Dynamic Pre-Build Collision Elimination for: $ERROR_ID"
+log_info "🔍 Full Error ID: $FULL_ERROR_ID"
+
+# Universal iOS App Store compliance fixes
+apply_universal_compliance_fixes() {
+    log_info "🌐 Applying universal iOS App Store compliance fixes..."
+    
+    if [ ! -f "$PROJECT_FILE" ]; then
+        log_error "❌ Project file not found: $PROJECT_FILE"
+        return 1
+    fi
+    
+    # Create backup
+    cp "$PROJECT_FILE" "${PROJECT_FILE}.${ERROR_ID}_backup_${TIMESTAMP}"
+    
+    # Apply bundle-id-rules compliant fixes
+    log_info "📋 Applying bundle-ID-rules compliant naming..."
+    
+    # Reset all to main bundle ID first
+    sed -i.tmp "s/PRODUCT_BUNDLE_IDENTIFIER = [^;]*;/PRODUCT_BUNDLE_IDENTIFIER = $TARGET_BUNDLE_ID;/g" "$PROJECT_FILE"
+    
+    # Apply specific target configurations
+    # Widget extensions
+    sed -i '' '/WidgetExtension\|Widget.*Extension\|.*Widget.*target/,/^[[:space:]]*}/ {
+        s/PRODUCT_BUNDLE_IDENTIFIER = [^;]*;/PRODUCT_BUNDLE_IDENTIFIER = '"$TARGET_BUNDLE_ID"'.widget;/g
+    }' "$PROJECT_FILE"
+    
+    # Test targets
+    sed -i '' '/TEST_HOST\|.*Tests.*target\|BUNDLE_LOADER/,/^[[:space:]]*}/ {
+        s/PRODUCT_BUNDLE_IDENTIFIER = [^;]*;/PRODUCT_BUNDLE_IDENTIFIER = '"$TARGET_BUNDLE_ID"'.tests;/g
+    }' "$PROJECT_FILE"
+    
+    # Notification service extensions
+    sed -i '' '/NotificationService\|Notification.*Extension/,/^[[:space:]]*}/ {
+        s/PRODUCT_BUNDLE_IDENTIFIER = [^;]*;/PRODUCT_BUNDLE_IDENTIFIER = '"$TARGET_BUNDLE_ID"'.notificationservice;/g
+    }' "$PROJECT_FILE"
+    
+    # App extensions
+    sed -i '' '/.*Extension.*target/,/^[[:space:]]*}/ {
+        s/PRODUCT_BUNDLE_IDENTIFIER = [^;]*;/PRODUCT_BUNDLE_IDENTIFIER = '"$TARGET_BUNDLE_ID"'.extension;/g
+    }' "$PROJECT_FILE"
+    
+    # Framework embedding fixes (iOS App Store compliance)
+    log_info "📦 Applying framework embedding fixes..."
+    
+    # Set extension targets to "Do Not Embed"
+    sed -i '' 's/settings = {ATTRIBUTES = (CodeSignOnCopy, ); };/settings = {ATTRIBUTES = (); };/g' "$PROJECT_FILE"
+    
+    # Clean up
+    rm -f "${PROJECT_FILE}.tmp"
+    
+    log_success "✅ Universal compliance fixes applied for $ERROR_ID"
+    return 0
+}
+
+# Validate fixes
+validate_universal_fixes() {
+    local unique_bundles
+    unique_bundles=$(grep "PRODUCT_BUNDLE_IDENTIFIER = " "$PROJECT_FILE" | sort | uniq | wc -l)
+    
+    local total_configs
+    total_configs=$(grep -c "PRODUCT_BUNDLE_IDENTIFIER = " "$PROJECT_FILE" 2>/dev/null || echo "0")
+    
+    log_info "📊 Validation Results:"
+    log_info "   Unique bundle IDs: $unique_bundles"
+    log_info "   Total configurations: $total_configs"
+    
+    # Check for duplicates of main bundle ID
+    local main_bundle_count
+    main_bundle_count=$(grep -c "PRODUCT_BUNDLE_IDENTIFIER = $TARGET_BUNDLE_ID;" "$PROJECT_FILE" 2>/dev/null || echo "0")
+    
+    if [ "$main_bundle_count" -le 1 ]; then
+        log_success "✅ No duplicate main bundle IDs detected"
+        return 0
+    else
+        log_warn "⚠️ Still $main_bundle_count configurations using main bundle ID"
+        return 1
+    fi
+}
+
+# Main execution
+main() {
+    log_info "🚀 Starting dynamic collision elimination for $ERROR_ID..."
+    
+    if apply_universal_compliance_fixes && validate_universal_fixes; then
+        log_success "✅ Dynamic collision elimination successful for $FULL_ERROR_ID"
+        
+        # Generate report
+        cat > "${ERROR_ID}_dynamic_report_${TIMESTAMP}.txt" << EOF
+DYNAMIC COLLISION ELIMINATION REPORT
+====================================
+Error ID: $FULL_ERROR_ID
+Strategy: Universal iOS App Store compliance
+Status: SUCCESS
+
+FIXES APPLIED:
+✅ Bundle-ID-Rules compliant naming
+✅ Framework embedding compliance
+✅ Extension targets set to "Do Not Embed"
+✅ Unique bundle identifiers assigned
+
+PREVENTION STATUS:
+🛡️ Error ID $FULL_ERROR_ID PREVENTED
+🚀 CFBundleIdentifier collisions eliminated
+EOF
+
+        return 0
+    else
+        log_error "❌ Dynamic collision elimination failed for $FULL_ERROR_ID"
+        return 1
+    fi
+}
+
+main "$@"

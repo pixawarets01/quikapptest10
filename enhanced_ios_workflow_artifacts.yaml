@@ -1,0 +1,47 @@
+artifacts:
+  # 📱 Primary IPA Files (Highest Priority)
+  - output/ios/*.ipa
+  - output/ios/*_collision_free.ipa # Collision-free IPA for App Store
+  - output/ios/*_AppStoreConnect_Fixed.ipa # App Store Connect compatible IPA
+  - output/ios/*_Nuclear_AppStore_Fixed.ipa # NUCLEAR backup IPA
+  - build/ios/ipa/*.ipa
+  - ios/build/*.ipa
+  - "*.ipa"
+
+  # 📦 Archive Files (When IPA export fails or for manual processing)
+  - output/ios/*.xcarchive
+  - build/ios/archive/*.xcarchive
+  - ios/build/*.xcarchive
+  - "*.xcarchive"
+
+  # 🔧 Debug Symbols and Build Artifacts
+  - output/ios/*.dSYM
+  - output/ios/*.app.dSYM.zip
+  - build/ios/ipa/*.dSYM
+  - ios/build/*.dSYM
+  - "*.dSYM"
+  - "*.dSYM.zip"
+
+  # 📋 Build Configuration and Reports
+  - ios/ExportOptions.plist
+  - output/ios/ARTIFACTS_SUMMARY.txt
+  - output/ios/TROUBLESHOOTING_GUIDE.txt
+  - output/ios/PERMISSIONS_SUMMARY.txt
+  - build_errors.log
+  - ipa_upload.log
+
+  # 📊 Build Logs (For debugging)
+  - build/ios/logs/
+  - output/ios/logs/
+  - ios/build/logs/
+  - "/tmp/xcodebuild_logs/*.log"
+  - "/var/folders/**/xcodebuild_*.log"
+
+  # 🔐 Code Signing Information
+  - ios/Runner.xcodeproj/project.pbxproj
+  - ios/Podfile
+  - ios/Podfile.lock
+
+  # 🎯 Additional Build Artifacts
+  - output/ios/
+  - build/ios/

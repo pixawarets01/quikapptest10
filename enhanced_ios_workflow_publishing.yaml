@@ -1,0 +1,69 @@
+publishing:
+  # 📧 Enhanced Email Notifications
+  email:
+    recipients:
+      - ${EMAIL_RECIPIENTS:-user@example.com}
+    notify:
+      success: true
+      failure: true
+
+  # 🚀 Enhanced App Store Connect Integration
+  app_store_connect:
+    # Use the App Store Connect integration configured in environment
+    auth: integration
+
+    # 📱 TestFlight Configuration (Enhanced)
+    submit_to_testflight: ${IS_TESTFLIGHT:-true}
+
+    # 🎯 Beta Groups (Conditional based on profile type)
+    beta_groups:
+      # Only submit to beta groups for app-store profile type
+      - ${TESTFLIGHT_BETA_GROUPS:-Internal Testing}
+
+    # 📋 TestFlight Metadata
+    beta_build_localizations:
+      - locale: en-US
+        whats_new: |
+          🚀 New build from enhanced iOS workflow
+          📱 Built with comprehensive error handling
+          🔧 Includes collision prevention and upload optimization
+
+          Build Information:
+          - Bundle ID: ${BUNDLE_ID}
+          - Profile Type: ${PROFILE_TYPE}
+          - Build Date: ${BUILD_DATE:-$(date)}
+
+    # 🏪 App Store Release (Production)
+    submit_to_app_store: ${SUBMIT_TO_APP_STORE:-false}
+
+    # 📝 App Store Release Configuration
+    release_type: ${RELEASE_TYPE:-MANUAL} # MANUAL, AFTER_APPROVAL, SCHEDULED
+
+    # 🎯 App Store Review Information
+    copyright: ${APP_COPYRIGHT:-$(date +%Y) ${COMPANY_NAME:-Your Company}}
+    review_details:
+      contact_email: ${REVIEW_CONTACT_EMAIL:-${EMAIL_RECIPIENTS:-user@example.com}}
+      contact_first_name: ${REVIEW_CONTACT_FIRST_NAME:-Review}
+      contact_last_name: ${REVIEW_CONTACT_LAST_NAME:-Contact}
+      contact_phone: ${REVIEW_CONTACT_PHONE:-+1234567890}
+      demo_account_name: ${DEMO_ACCOUNT_NAME:-}
+      demo_account_password: ${DEMO_ACCOUNT_PASSWORD:-}
+      notes: |
+        Enhanced iOS build with comprehensive error handling and collision prevention.
+
+        Build Features:
+        - Multi-layer collision prevention system
+        - Enhanced error handling with retry logic
+        - Comprehensive IPA validation and upload
+        - Automatic fallback build methods
+
+        Technical Details:
+        - Bundle ID: ${BUNDLE_ID}
+        - Profile Type: ${PROFILE_TYPE}
+        - Build System: Enhanced Codemagic Workflow
+
+    # 🔄 Enhanced Upload Configuration
+    cancel_previous_submissions: true
+
+    # 📊 Upload Monitoring
+    track_upload_progress: true

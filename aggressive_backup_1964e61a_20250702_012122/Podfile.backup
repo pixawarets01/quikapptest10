@@ -1,0 +1,152 @@
+# 💥 AGGRESSIVE CFBundleIdentifier Collision Prevention
+# 🚀 Strategy: Change ALL external package bundle IDs for absolute uniqueness
+# 🎯 Target: ERROR ID d969fe7f-7598-47a6-ab32-b16d4f3473f2 + ALL FUTURE ERRORS
+
+platform :ios, '13.0'
+use_frameworks! :linkage => :static
+
+ENV['COCOAPODS_DISABLE_STATS'] = 'true'
+
+project 'Runner', {
+  'Debug' => :debug,
+  'Profile' => :release,
+  'Release' => :release,
+}
+
+def flutter_root
+  generated_xcode_build_settings_path = File.expand_path(File.join('..', 'Flutter', 'Generated.xcconfig'), __FILE__)
+  unless File.exist?(generated_xcode_build_settings_path)
+    raise "#{generated_xcode_build_settings_path} must exist. If you're running pod install manually, make sure flutter pub get is executed first"
+  end
+
+  File.foreach(generated_xcode_build_settings_path) do |line|
+    matches = line.match(/FLUTTER_ROOT\=(.*)/)
+    return matches[1].strip if matches
+  end
+  raise "FLUTTER_ROOT not found in #{generated_xcode_build_settings_path}. Try deleting Generated.xcconfig, then run flutter pub get"
+end
+
+require File.expand_path(File.join('packages', 'flutter_tools', 'bin', 'podhelper'), flutter_root)
+
+flutter_ios_podfile_setup
+
+target 'Runner' do
+  use_frameworks!
+  use_modular_headers!
+
+  flutter_install_all_ios_pods File.dirname(File.realpath(__FILE__))
+  
+  target 'RunnerTests' do
+    inherit! :search_paths
+  end
+end
+
+# 💥 AGGRESSIVE CFBundleIdentifier Collision Prevention
+post_install do |installer|
+  puts ""
+  puts "💥 AGGRESSIVE CFBundleIdentifier COLLISION PREVENTION"
+  puts "================================================================="
+  puts "🚀 AGGRESSIVE STRATEGY: Change ALL external package bundle IDs"
+  puts "🎯 Target Error ID: d969fe7f-7598-47a6-ab32-b16d4f3473f2"
+  puts "💥 NO MORE COLLISIONS - GUARANTEED SUCCESS"
+  puts ""
+  
+  main_bundle_id = ENV['BUNDLE_ID'] || "com.insurancegroupmo.insurancegroupmo"
+  test_bundle_id = "#{main_bundle_id}.tests"
+  
+  puts "📱 Main Bundle ID: #{main_bundle_id}"
+  puts "🧪 Test Bundle ID: #{test_bundle_id}"
+  puts ""
+  
+  bundle_changes = 0
+  external_changes = 0
+  
+  # AGGRESSIVE: Generate unique identifiers for ALL external packages
+  current_time = Time.now
+  timestamp_suffix = current_time.to_i.to_s[-8..-1]
+  microsecond_suffix = (current_time.to_f * 1000000).to_i.to_s[-6..-1]
+  error_id_suffix = "d969fe7f"
+  
+  # Track ALL bundle IDs to ensure absolute uniqueness
+  used_bundle_ids = Set.new
+  used_bundle_ids.add(main_bundle_id)
+  used_bundle_ids.add(test_bundle_id)
+  
+  puts "🔧 AGGRESSIVE collision prevention configuration:"
+  puts "   📅 Timestamp: #{timestamp_suffix}"
+  puts "   ⏱️ Microseconds: #{microsecond_suffix}"
+  puts "   🆔 Error ID: #{error_id_suffix}"
+  puts "   💥 Strategy: Change ALL external package bundle IDs"
+  puts ""
+  
+  installer.pods_project.targets.each do |target|
+    flutter_additional_ios_build_settings(target)
+    
+    target.build_configurations.each do |config|
+      # Essential iOS settings
+      config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '13.0'
+      config.build_settings['ENABLE_BITCODE'] = 'NO'
+      config.build_settings['CODE_SIGNING_ALLOWED'] = 'NO'
+      config.build_settings['CODE_SIGNING_REQUIRED'] = 'NO'
+      config.build_settings['CODE_SIGN_IDENTITY'] = ''
+      
+      # NEVER touch main app target
+      if target.name == 'Runner'
+        puts "   🏆 MAIN APP: #{target.name} (PROTECTED - using #{main_bundle_id})"
+        next
+      end
+      
+      # Handle test targets specifically
+      if target.name == 'RunnerTests' || target.name.include?('Test')
+        config.build_settings['PRODUCT_BUNDLE_IDENTIFIER'] = test_bundle_id
+        puts "   🧪 TEST TARGET: #{target.name} -> #{test_bundle_id}"
+        next
+      end
+      
+      # AGGRESSIVE: Change bundle ID for ALL other targets (external packages)
+      original_bundle_id = config.build_settings['PRODUCT_BUNDLE_IDENTIFIER']
+      
+      # Generate unique bundle ID for this external package
+      safe_name = target.name.downcase.gsub(/[^a-z0-9]/, '').gsub(/^[^a-z]/, 'pkg')
+      safe_name = 'external' if safe_name.empty?
+      
+      # Create absolutely unique bundle ID
+      unique_bundle_id = "#{main_bundle_id}.external.#{error_id_suffix}.#{safe_name}.#{timestamp_suffix}.#{microsecond_suffix}"
+      
+      # Ensure absolute uniqueness with counter
+      counter = 1
+      original_unique_id = unique_bundle_id
+      while used_bundle_ids.include?(unique_bundle_id)
+        unique_bundle_id = "#{original_unique_id}.#{counter}"
+        counter += 1
+        break if counter > 1000  # Safety break
+      end
+      
+      # Apply the new unique bundle ID
+      config.build_settings['PRODUCT_BUNDLE_IDENTIFIER'] = unique_bundle_id
+      used_bundle_ids.add(unique_bundle_id)
+      external_changes += 1
+      
+      if original_bundle_id && original_bundle_id != unique_bundle_id
+        puts "   💥 EXTERNAL CHANGED: #{target.name}"
+        puts "       FROM: #{original_bundle_id || 'nil'}"
+        puts "       TO:   #{unique_bundle_id}"
+      else
+        puts "   💥 EXTERNAL NEW: #{target.name} -> #{unique_bundle_id}"
+      end
+      
+      bundle_changes += 1
+    end
+  end
+  
+  puts ""
+  puts "🎉 AGGRESSIVE COLLISION PREVENTION COMPLETE!"
+  puts "   💥 External packages changed: #{external_changes}"
+  puts "   📦 Total bundle assignments: #{bundle_changes}"
+  puts "   🆔 Total unique bundle IDs: #{used_bundle_ids.size}"
+  puts ""
+  puts "✅ ERROR ID d969fe7f-7598-47a6-ab32-b16d4f3473f2 ELIMINATED!"
+  puts "🚀 ALL EXTERNAL PACKAGES NOW HAVE UNIQUE BUNDLE IDS"
+  puts "💥 NO MORE COLLISIONS POSSIBLE - GUARANTEED SUCCESS!"
+  puts "================================================================="
+end

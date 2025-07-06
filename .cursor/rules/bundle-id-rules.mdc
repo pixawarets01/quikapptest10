@@ -1,0 +1,97 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+Prompt 1: Master Directive for CI/CD and iOS Project Configuration
+Objective: Implement a complete, automated, and error-proof system for managing iOS bundle identifiers across all applications and CI/CD pipelines. This involves enforcing strict rules in the CI/CD workflow and providing developers with the necessary tools and checklists to prevent CFBundleIdentifier collisions.
+
+This master directive is broken down into three parts:
+
+CI/CD Workflow Rules: Mandates for the build and deployment pipeline.
+
+Developer Tooling & Checklists: Resources to be integrated into the development lifecycle.
+
+AI-Assisted Automation: Specific prompts for automating audit and refactoring tasks.
+
+Part A: CI/CD Workflow Mandates
+Configure the CI/CD pipeline (e.g., Codemagic) to adhere to the following non-negotiable rules:
+
+100% Dynamic Variables: All scripts must use dynamic environment variables (e.g., BUNDLE_ID, PKG_NAME) sourced directly from CI/CD API calls or secure environment stores.
+
+Eliminate Hardcoding: No hardcoded bundle IDs or environment-specific values shall exist in any build scripts, fix scripts, or workflow logic.
+
+Automated Fallback: A simple, clean, and robust fallback mechanism must be in place. This mechanism must be triggered dynamically on failure to ensure build resilience.
+
+Universal Scripting: The branding_assets.sh script, Podfile, and any other configuration-as-code files must use the dynamic bundle ID logic to adapt to any app or environment automatically.
+
+Verified Automation: The resulting system must be fully automated, CI/CD-ready, and capable of building any application without manual intervention, ensuring it is safe for production deployment pipelines.
+
+Part B: Developer Tooling & Checklists
+Action: Create and integrate the following resources into the project repository to guide developers and enforce best practices locally.
+
+1. Create PULL_REQUEST_TEMPLATE.md
+Create a file named PULL_REQUEST_TEMPLATE.md in the .github or .gitlab directory with the following content. This ensures every pull request is checked against the rules.
+
+Markdown
+
+# Pre-Flight Checklist: Preventing CFBundleIdentifier Collisions
+
+**Objective:** Ensure every bundle in the application has a 100% unique `CFBundleIdentifier` before merging.
+
+### Rule 1: Naming Convention
+- [ ] **Base Identifier Defined:** The main app target's `Product Bundle Identifier` is set in reverse-domain notation (e.g., `com.company.appname`).
+- [ ] **Component Suffixes Applied:** Every other target (framework, widget, extension) uses the base identifier as a prefix, followed by a unique, descriptive suffix (e.g., `com.company.appname.widget`).
+
+### Rule 2: Xcode Target Configuration
+- [ ] **Verify All Targets:** For **every target** in the Xcode project, its `Product Bundle Identifier` in `Build Settings` has been checked and confirmed to be unique.
+- [ ] **Inspect Embedded Content:** In the main app target's `General` > `Frameworks, Libraries, and Embedded Content` section:
+  - [ ] No framework is mistakenly duplicated.
+  - [ ] Frameworks that are dependencies of *other embedded frameworks* are set to **"Do Not Embed"**.
+
+### Rule 3: Build & Archive Hygiene
+- [ ] **Clean Build Folder:** The build folder was cleaned (`Product > Clean Build Folder`) before creating this PR to remove stale artifacts.
+- [ ] **Inspect Final App Bundle (Recommended):** The final `.app` bundle has been inspected to visually confirm no unexpected or duplicate bundles exist in the `Frameworks` and `PlugIns` directories.
+2. Implement an Automated Validation Script
+Action: Create a validation script (e.g., a pre-commit hook or a CI step) based on the following logic to automatically detect CFBundleIdentifier collisions before they cause a build failure.
+
+Goal: Create a script that inspects the final built application package (.app) and fails the build if it finds a bundle identifier collision.
+
+Pseudocode/Logic:
+
+START
+
+INPUT: path_to_app_bundle (e.g., ./build/ios/archive/Products/Applications/Runner.app)
+
+INITIALIZE: found_identifiers = {} (A dictionary or hash map)
+
+FIND all bundle directories (.framework, .appex, .bundle) inside the path_to_app_bundle, including the main app bundle itself.
+
+FOR EACH bundle_path found:
+    LET plist_path = bundle_path + "/Info.plist"
+    IF plist_path exists:
+        EXTRACT the CFBundleIdentifier value from plist_path. Let's call it current_id.
+        IF current_id is already a key in found_identifiers:
+            PRINT "Error: CFBundleIdentifier Collision Found!"
+            PRINT "Identifier: current_id"
+            PRINT "Original Location: found_identifiers[current_id]"
+            PRINT "Duplicate Location: bundle_path"
+            EXIT with error code 1.
+        ELSE:
+            ADD current_id to found_identifiers with bundle_path as its value.
+
+PRINT "Success: All bundle identifiers are unique."
+EXIT with success code 0.
+
+END
+Part C: AI-Assisted Prompts for Auditing & Fixing
+Use the following direct prompts with an AI code assistant (like GitHub Copilot or a local LLM) to quickly perform audits and fixes.
+
+For Auditing the Built App:
+"Create a shell script that finds all Info.plist files within my iOS build directory (build/ios/archive/Products/Applications/Runner.app), reads the CFBundleIdentifier from each one using PlistBuddy, and reports any duplicate identifiers it finds, printing the paths to the conflicting files."
+
+For Auditing Xcode Project Settings:
+"Analyze my project.pbxproj file. List all targets and their corresponding PRODUCT_BUNDLE_IDENTIFIER build setting to help me find potential duplicates."
+
+For Fixing a Specific Issue:
+"My app target and an embedded framework target are both using the bundle ID com.mycompany.app. The framework's target name is SharedUI. Refactor the framework's Product Bundle Identifier in the Xcode project to be com.mycompany.app.sharedui."
