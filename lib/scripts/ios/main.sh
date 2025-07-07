@@ -21,7 +21,11 @@ send_email() {
     if [ "${ENABLE_EMAIL_NOTIFICATIONS:-false}" = "true" ]; then
         log_info "Sending $email_type email for $platform build $build_id"
         chmod +x "${SCRIPT_DIR}/email_notifications.sh"
-        bash "${SCRIPT_DIR}/email_notifications.sh" "$email_type" "$platform" "$build_id" "$error_message" || log_warn "Failed to send email notification"
+        if bash "${SCRIPT_DIR}/email_notifications.sh" "$email_type" "$platform" "$build_id" "$error_message"; then
+            log_success "Email sent successfully"
+        else
+            log_warn "Failed to send email notification"
+        fi
     fi
 }
 
@@ -146,7 +150,11 @@ main() {
     if [ "${ENABLE_EMAIL_NOTIFICATIONS:-false}" = "true" ] && [ -z "${EMAIL_BUILD_STARTED_SENT:-}" ]; then
         log_info "--- Stage 2: Sending Build Started Email ---"
         chmod +x "${SCRIPT_DIR}/email_notifications.sh"
-        bash "${SCRIPT_DIR}/email_notifications.sh" "build_started" "iOS" "${CM_BUILD_ID:-unknown}" || log_warn "Failed to send build started email."
+        if bash "${SCRIPT_DIR}/email_notifications.sh" "build_started" "iOS" "${CM_BUILD_ID:-unknown}"; then
+            log_success "Build started email sent successfully"
+        else
+            log_warn "Failed to send build started email."
+        fi
         export EMAIL_BUILD_STARTED_SENT="true"
     elif [ -n "${EMAIL_BUILD_STARTED_SENT:-}" ]; then
         log_info "--- Stage 2: Build Started Email Already Sent (Skipping) ---"

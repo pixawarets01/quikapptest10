@@ -138,7 +138,7 @@ detect_p12_password() {
     log_info "🔍 Detecting P12 certificate password..."
     
     # First priority: Use provided CERT_PASSWORD if it exists and is not a placeholder
-    if [ -n "$provided_password" ] && [ "$provided_password" != "set" ] && [ "$provided_password" != "true" ] && [ "$provided_password" != "false" ] && [ "$provided_password" != "SET" ] && [ "$provided_password" != "your_password" ]; then
+    if [ -n "$provided_password" ] && [ "$provided_password" != "set" ] && [ "$provided_password" != "true" ] && [ "$provided_password" != "false" ] && [ "$provided_password" != "SET" ] && [ "$provided_password" != "your_password" ] && [ "$provided_password" != "Password@1234" ]; then
         log_info "Testing provided certificate password: '$provided_password'"
         if validate_p12_certificate "$p12_file" "$provided_password"; then
             log_success "Provided certificate password is valid: '$provided_password'"
@@ -148,7 +148,7 @@ detect_p12_password() {
             log_warn "Provided certificate password failed validation: '$provided_password'"
         fi
     else
-        log_info "No valid certificate password provided (value: '${provided_password:-<empty>}')"
+        log_info "No valid certificate password provided (value: '${provided_password:-<empty>}') - skipping provided password"
     fi
     
     # Second priority: Try empty password
@@ -161,7 +161,7 @@ detect_p12_password() {
     
     # Third priority: Try common passwords
     log_info "Trying common passwords..."
-    local common_passwords=("password" "123456" "certificate" "ios" "apple" "distribution" "match" "User@54321" "quikappcert" "twinklub")
+    local common_passwords=("password" "123456" "certificate" "ios" "apple" "distribution" "match" "User@54321" "quikappcert" "twinklub" "Password@1234" "build123" "ios123" "cert123" "p12password" "distribution123" "apple123" "developer123" "team123" "keychain123")
     
     for pwd in "${common_passwords[@]}"; do
         log_info "Trying common password: '$pwd'"
@@ -350,9 +350,10 @@ main() {
         # Detect P12 certificate password
         local detected_password
         detected_password=$(detect_p12_password "$p12_file")
+        local password_detection_result=$?
         
-        if [ $? -eq 0 ] && [ -n "$detected_password" ]; then
-            log_info "🔐 Using detected password: '${detected_password:+SET}'"
+        if [ $password_detection_result -eq 0 ] && [ -n "$detected_password" ]; then
+            log_info "🔐 Using detected password: '${detected_password}'"
             
             # Install P12 certificate with detected password
             if install_p12_certificate "$p12_file" "$detected_password"; then
@@ -361,7 +362,7 @@ main() {
                 log_error "❌ Failed to install P12 certificate"
                 exit 1
             fi
-        elif [ $? -eq 0 ] && [ -z "$detected_password" ]; then
+        elif [ $password_detection_result -eq 0 ] && [ -z "$detected_password" ]; then
             log_info "🔐 Using empty password"
             
             # Install P12 certificate with empty password
@@ -374,6 +375,7 @@ main() {
         else
             log_error "❌ Could not detect valid certificate password"
             log_error "💡 Please check your CERT_PASSWORD environment variable"
+            log_error "🔍 Tried: provided password, empty password, and common passwords"
             exit 1
         fi
         
