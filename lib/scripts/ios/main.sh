@@ -157,6 +157,32 @@ main() {
     log_info "🔒 Using Enhanced Certificate Validation System"
     log_info "🎯 Features: P12 validation, CER+KEY conversion, App Store Connect API validation, 503CEB9C fix"
     
+    # Stage 3.0: Initialize Keychain (CRITICAL - MUST BE FIRST)
+    log_info "--- Stage 3.0: Keychain Initialization (CRITICAL - MUST BE FIRST) ---"
+    log_info "🔐 Ensuring ios-build.keychain exists and is properly configured"
+    
+    if [ -f "${SCRIPT_DIR}/keychain_initializer.sh" ]; then
+        chmod +x "${SCRIPT_DIR}/keychain_initializer.sh"
+        
+        log_info "🔍 Running keychain initialization..."
+        
+        if "${SCRIPT_DIR}/keychain_initializer.sh"; then
+            log_success "✅ Stage 3.0 completed: Keychain initialization successful"
+            log_info "🔐 ios-build.keychain is ready for certificate operations"
+            export KEYCHAIN_INITIALIZED="true"
+        else
+            log_error "❌ Stage 3.0 failed: Keychain initialization failed"
+            log_error "🔧 Cannot proceed with certificate operations without keychain"
+            send_email "build_failed" "iOS" "${CM_BUILD_ID:-unknown}" "Keychain initialization failed."
+            return 1
+        fi
+    else
+        log_error "❌ Stage 3.0 failed: Keychain initializer script not found"
+        log_error "📝 Expected: ${SCRIPT_DIR}/keychain_initializer.sh"
+        send_email "build_failed" "iOS" "${CM_BUILD_ID:-unknown}" "Keychain initializer script not found."
+        return 1
+    fi
+    
     # Stage 3.1: 503CEB9C Certificate Signing Fix
     log_info "--- Stage 3.1: 503CEB9C Certificate Signing Fix ---"
     log_info "🎯 Target Error ID: 503ceb9c-9940-40a3-8dc5-b99e6d914ef0"

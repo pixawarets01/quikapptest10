@@ -83,6 +83,12 @@ validate_file() {
 setup_keychain() {
     log_info "🔐 Setting up dedicated keychain for certificate installation..."
     
+    # Check if keychain is already initialized
+    if [ "${KEYCHAIN_INITIALIZED:-false}" = "true" ]; then
+        log_info "✅ Keychain already initialized by keychain_initializer.sh"
+        return 0
+    fi
+    
     # Delete existing keychain if it exists
     security delete-keychain "$KEYCHAIN_NAME" 2>/dev/null || true
     
