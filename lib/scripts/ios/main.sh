@@ -82,8 +82,23 @@ main() {
         return 1
     fi
     
-    # Stage 0: Unicode Character Cleaning (CRITICAL - MUST BE FIRST)
-    log_info "--- Stage 0: Unicode Character Cleaning (CRITICAL - MUST BE FIRST) ---"
+    # Stage 0: Script Encoding Fix (CRITICAL - MUST BE FIRST)
+    log_info "--- Stage 0: Script Encoding Fix (CRITICAL - MUST BE FIRST) ---"
+    log_info "🔧 Fixing script encoding issues: BOM removal, line endings, permissions"
+    log_info "🎯 Target: All shell scripts in the iOS workflow"
+    
+    # Make script encoding fix executable
+    chmod +x "${SCRIPT_DIR}/fix_script_encoding.sh"
+    
+    # Run script encoding fix
+    if ! "${SCRIPT_DIR}/fix_script_encoding.sh"; then
+        log_error "❌ Script encoding fix failed"
+        send_email "build_failed" "iOS" "${CM_BUILD_ID:-unknown}" "Script encoding fix failed."
+        return 1
+    fi
+    
+    # Stage 0.5: Unicode Character Cleaning (CRITICAL - MUST BE SECOND)
+    log_info "--- Stage 0.5: Unicode Character Cleaning (CRITICAL - MUST BE SECOND) ---"
     log_info "🧹 Removing Unicode characters that cause CocoaPods parsing errors"
     log_info "🎯 Target: project.pbxproj, Podfile, and other iOS configuration files"
     

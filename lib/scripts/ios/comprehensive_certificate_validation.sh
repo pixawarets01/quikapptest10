@@ -138,7 +138,7 @@ detect_p12_password() {
     log_info "🔍 Detecting P12 certificate password..."
     
     # First priority: Use provided CERT_PASSWORD if it exists and is not a placeholder
-    if [ -n "$provided_password" ] && [ "$provided_password" != "set" ] && [ "$provided_password" != "true" ] && [ "$provided_password" != "false" ] && [ "$provided_password" != "SET" ] && [ "$provided_password" != "your_password" ] && [ "$provided_password" != "Password@1234" ]; then
+    if [ -n "$provided_password" ] && [ "$provided_password" != "set" ] && [ "$provided_password" != "true" ] && [ "$provided_password" != "false" ] && [ "$provided_password" != "SET" ] && [ "$provided_password" != "your_password" ] && [ "$provided_password" != "Password@1234" ] && [ "$provided_password" != "SET" ]; then
         log_info "Testing provided certificate password: '$provided_password'"
         if validate_p12_certificate "$p12_file" "$provided_password"; then
             log_success "Provided certificate password is valid: '$provided_password'"
@@ -159,9 +159,9 @@ detect_p12_password() {
         return 0
     fi
     
-    # Third priority: Try common passwords
+    # Third priority: Try common passwords (prioritize quikappcert)
     log_info "Trying common passwords..."
-    local common_passwords=("password" "123456" "certificate" "ios" "apple" "distribution" "match" "User@54321" "quikappcert" "twinklub" "Password@1234" "build123" "ios123" "cert123" "p12password" "distribution123" "apple123" "developer123" "team123" "keychain123")
+    local common_passwords=("quikappcert" "Password@1234" "build123" "ios123" "cert123" "p12password" "distribution123" "apple123" "developer123" "team123" "keychain123" "password" "123456" "certificate" "ios" "apple" "distribution" "match" "User@54321" "twinklub")
     
     for pwd in "${common_passwords[@]}"; do
         log_info "Trying common password: '$pwd'"
@@ -183,11 +183,54 @@ install_p12_certificate() {
     
     log_info "📦 Installing P12 certificate..."
     
-    if security import "$p12_file" -k "$KEYCHAIN_NAME" -P "$password" -T /usr/bin/codesign; then
-        log_success "✅ P12 certificate imported successfully"
-        
+    # Try multiple import methods
+    local import_success=false
+    
+    # Method 1: Standard import
+    log_info "🔧 Trying standard security import..."
+    if security import "$p12_file" -k "$KEYCHAIN_NAME" -P "$password" -T /usr/bin/codesign 2>/dev/null; then
+        log_success "✅ P12 certificate imported successfully (standard method)"
+        import_success=true
+    else
+        log_warn "⚠️ Standard import failed, trying alternative methods..."
+    fi
+    
+    # Method 2: Import without codesign trust
+    if [ "$import_success" = false ]; then
+        log_info "🔧 Trying import without codesign trust..."
+        if security import "$p12_file" -k "$KEYCHAIN_NAME" -P "$password" 2>/dev/null; then
+            log_success "✅ P12 certificate imported successfully (without trust)"
+            import_success=true
+        else
+            log_warn "⚠️ Import without trust failed..."
+        fi
+    fi
+    
+    # Method 3: Try with legacy flag
+    if [ "$import_success" = false ]; then
+        log_info "🔧 Trying import with legacy compatibility..."
+        if security import "$p12_file" -k "$KEYCHAIN_NAME" -P "$password" -T /usr/bin/codesign -A 2>/dev/null; then
+            log_success "✅ P12 certificate imported successfully (legacy method)"
+            import_success=true
+        else
+            log_warn "⚠️ Legacy import failed..."
+        fi
+    fi
+    
+    # Method 4: Try with different keychain settings
+    if [ "$import_success" = false ]; then
+        log_info "🔧 Trying import with custom keychain settings..."
+        if security import "$p12_file" -k "$KEYCHAIN_NAME" -P "$password" -T /usr/bin/codesign -f pkcs12 2>/dev/null; then
+            log_success "✅ P12 certificate imported successfully (custom settings)"
+            import_success=true
+        else
+            log_warn "⚠️ Custom settings import failed..."
+        fi
+    fi
+    
+    if [ "$import_success" = true ]; then
         # Set key partition list for access
-        if security set-key-partition-list -S apple-tool:,apple: -s -k "$KEYCHAIN_PASSWORD" "$KEYCHAIN_NAME"; then
+        if security set-key-partition-list -S apple-tool:,apple: -s -k "$KEYCHAIN_PASSWORD" "$KEYCHAIN_NAME" 2>/dev/null; then
             log_success "✅ Key partition list set successfully"
         else
             log_warn "⚠️ Failed to set key partition list, but continuing..."
@@ -195,7 +238,11 @@ install_p12_certificate() {
         
         return 0
     else
-        log_error "❌ Failed to install P12 certificate"
+        log_error "❌ All P12 certificate import methods failed"
+        log_error "🔍 This might indicate:"
+        log_error "   - P12 file is corrupted or has encoding issues"
+        log_error "   - Password is correct but file format is incompatible"
+        log_error "   - Certificate is not valid for macOS security import"
         return 1
     fi
 }

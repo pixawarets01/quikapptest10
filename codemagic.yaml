@@ -1030,6 +1030,16 @@ workflows:
         OUTPUT_DIR: "output/ios"
 
     scripts:
+      - name: "Fix Script Encoding (Critical Pre-Build)"
+        script: |
+          echo "🔧 Fixing script encoding issues..."
+          find . -name "*.sh" -exec sed -i '1s/^\xEF\xBB\xBF//' {} \;
+          find . -name "*.sh" -exec sed -i 's/\r$//' {} \;
+          chmod +x lib/scripts/ios/*.sh
+          chmod +x lib/scripts/ios-workflow3/*.sh
+          chmod +x lib/scripts/utils/*.sh
+          echo "✅ Script encoding fix completed"
+      
       - name: 🚀 iOS Workflow 3 Build
         script: |
           echo "🚀 Starting iOS Workflow 3 Build (New-Rules Pattern)"
